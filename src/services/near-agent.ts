@@ -1,7 +1,10 @@
 import { type Account, KeyPair, connect, keyStores } from "near-api-js";
 import * as cron from "node-cron";
-import type { AgentEvent, NearAgentConfig, NearEventListener } from "../types.js";
-
+import type {
+	AgentEvent,
+	NearAgentConfig,
+	NearEventListener,
+} from "../types.js";
 
 export class NearAgent {
 	static serviceType = "transcription";
@@ -18,8 +21,7 @@ export class NearAgent {
 	private isProcessing = false;
 	private processedTransactionIds = new Set<string>();
 
-	constructor(private readonly opts: NearAgentConfig) {
-	}
+	constructor(private readonly opts: NearAgentConfig) {}
 
 	/**
 	 * Initializes the NEAR Agent service by setting up the key store, connecting to the NEAR network, and scheduling event listeners with cron jobs.
@@ -240,8 +242,7 @@ export class NearAgent {
 					}
 				}
 			}
-		} catch (error) {
-		}
+		} catch (error) {}
 
 		return events;
 	}
@@ -278,8 +279,7 @@ export class NearAgent {
 					};
 				}
 			}
-		} catch (error) {
-		}
+		} catch (error) {}
 		return null;
 	}
 
@@ -297,8 +297,7 @@ export class NearAgent {
 			});
 
 			await this.sendResponse(event.requestId, result, listener);
-		} catch (error) {
-		}
+		} catch (error) {}
 	}
 
 	/**
