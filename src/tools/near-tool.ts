@@ -1,8 +1,7 @@
-import z from "zod";
 import { NearAgent } from "../services/near-agent.js";
-import type { NearAgentConfig } from "../types";
+import type { NearAgentConfig } from "../types.js";
 
-export const nearAgentTool = {
+export const nearAgentTool: any = {
 	name: "Near Agent",
 	description:
 		"Near Agent is a tool that allows you to interact with the Near network.",

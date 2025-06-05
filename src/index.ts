@@ -1,5 +1,5 @@
 import { FastMCP } from "fastmcp";
-import { nearAgentTool } from "./tools/nearTools.js";
+import { nearAgentTool } from "./tools/near-tool.js";
 
 async function main() {
 	console.log("Initializing MCP Near Server...");

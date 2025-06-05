@@ -1,4 +1,10 @@
-import { type Account, KeyPair, connect, keyStores } from "near-api-js";
+import {
+	type Account,
+	type ConnectConfig,
+	KeyPair,
+	connect,
+	keyStores,
+} from "near-api-js";
 import * as cron from "node-cron";
 import type {
 	AgentEvent,
@@ -43,12 +49,14 @@ export class NearAgent {
 			keyPair,
 		);
 
-		const near = await connect({
+		const config: ConnectConfig = {
 			networkId:
 				this.opts.networkConfig?.networkId || NearAgent.DEFAULT_NETWORK_ID,
 			nodeUrl: this.opts.networkConfig?.nodeUrl || NearAgent.DEFAULT_NODE_URL,
 			keyStore,
-		});
+		};
+
+		const near = await connect(config);
 
 		this.account = await near.account(this.opts.accountId);
 
@@ -120,7 +128,7 @@ export class NearAgent {
 
 	private async processBlock(blockHeight: number, listener: NearEventListener) {
 		try {
-			const block = await this.account.connection.provider.block({
+			const block = await this.account.provider.viewBlock({
 				blockId: blockHeight,
 			});
 
@@ -144,7 +152,7 @@ export class NearAgent {
 	 * @returns The current block object.
 	 */
 	private async getCurrentBlock() {
-		const currentBlock = await this.account.connection.provider.block({
+		const currentBlock = await this.account.provider.viewBlock({
 			finality: "final",
 		});
 		if (this.lastBlockHeight === 0) {
@@ -161,12 +169,12 @@ export class NearAgent {
 	 */
 	private async getRelevantReceipts(block: any, contractId: string) {
 		const relevantReceipts = [];
-		const blockDetails = await this.account.connection.provider.block({
+		const blockDetails = await this.account.provider.viewBlock({
 			blockId: block.header.height,
 		});
 
 		for (const chunk of blockDetails.chunks) {
-			const chunkDetails = await this.account.connection.provider.chunk(
+			const chunkDetails = await this.account.provider.viewChunk(
 				chunk.chunk_hash,
 			);
 
@@ -216,7 +224,7 @@ export class NearAgent {
 					: "https://api-testnet.nearblocks.io/v1/search";
 
 			const response = await fetch(`${apiUrl}?keyword=${receipt.receipt_id}`);
-			const data = await response.json();
+			const data = (await response.json()) as any;
 
 			if (data.receipts && data.receipts.length > 0) {
 				const txHash = data.receipts[0].originated_from_transaction_hash;
@@ -224,7 +232,7 @@ export class NearAgent {
 				if (txHash && !this.processedTransactionIds.has(txHash)) {
 					this.processedTransactionIds.add(txHash);
 					// Get transaction details and extract logs
-					const txStatus = await this.account.connection.provider.txStatus(
+					const txStatus = await this.account.provider.viewTransactionStatus(
 						txHash,
 						listener.contractId,
 						"INCLUDED",
