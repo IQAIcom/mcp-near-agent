@@ -1,5 +1,7 @@
 import { FastMCP } from "fastmcp";
-import { nearAgentTool } from "./tools/near-tool.js";
+import { listWatchingTool } from "./tools/list-watching-tool.js";
+import { stopWatchingTool } from "./tools/stop-watching-tool.js";
+import { watchEventTool } from "./tools/watch-event-tool.js";
 
 async function main() {
 	console.log("Initializing MCP Near Server...");
@@ -9,7 +11,10 @@ async function main() {
 		version: "0.0.1",
 	});
 
-	server.addTool(nearAgentTool);
+	// Add all tools
+	server.addTool(watchEventTool);
+	server.addTool(stopWatchingTool);
+	server.addTool(listWatchingTool);
 
 	try {
 		await server.start({

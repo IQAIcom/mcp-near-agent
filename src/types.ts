@@ -1,6 +1,6 @@
+import type { FastMCPSession } from "fastmcp";
 import type { Account } from "near-api-js";
 import type { KeyPairString } from "near-api-js/lib/utils";
-
 export type HandlerContext = {
 	account: Account;
 };
@@ -20,6 +20,9 @@ export type NearAgentConfig = {
 
 	// Array of event listeners
 	listeners: NearEventListener[];
+
+	// Session
+	session: FastMCPSession;
 
 	// Optional configurations
 	gasLimit?: string;
