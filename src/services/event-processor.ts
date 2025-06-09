@@ -1,4 +1,5 @@
 import { EventEmitter } from "node:events";
+import dedent from "dedent";
 import type { Account } from "near-api-js";
 import { env } from "../env.js";
 import type { AgentEvent } from "../types.js";
@@ -209,17 +210,18 @@ export class EventProcessor extends EventEmitter<EventProcessorEvents> {
 			payload: event.payload,
 		};
 
-		return `Please process the following NEAR blockchain event:
+		return dedent`
+			Please process the following NEAR blockchain event:
 
-Event Type: ${eventInfo.eventType}
-Request ID: ${eventInfo.requestId}
-Sender: ${eventInfo.sender}
-Timestamp: ${eventInfo.timestamp}
+			Event Type: ${eventInfo.eventType}
+			Request ID: ${eventInfo.requestId}
+			Sender: ${eventInfo.sender}
+			Timestamp: ${eventInfo.timestamp}
 
-Event Data:
-${JSON.stringify(eventInfo.payload, null, 2)}
+			Event Data:
+			${JSON.stringify(eventInfo.payload, null, 2)}
 
-Please analyze this event and provide a concise response that can be sent back to the blockchain contract.`;
+			Please analyze this event and provide a concise response that can be sent back to the blockchain contract.`;
 	}
 
 	/**
@@ -229,16 +231,17 @@ Please analyze this event and provide a concise response that can be sent back t
 		event: AgentEvent,
 		subscription: EventSubscription,
 	): string {
-		return `${EventProcessor.DEFAULT_SYSTEM_PROMPT}
+		return dedent`
+			${EventProcessor.DEFAULT_SYSTEM_PROMPT}
 
-You are processing a '${event.eventType}' event from contract '${subscription.contractId}'.
-The response will be sent to the blockchain method '${subscription.responseMethodName}'.
+			You are processing a '${event.eventType}' event from contract '${subscription.contractId}'.
+			The response will be sent to the blockchain method '${subscription.responseMethodName}'.
 
-Guidelines:
-- Provide a clear, concise response
-- Focus on the key information from the event
-- Ensure the response is appropriate for blockchain storage
-- Keep responses under 500 characters when possible`;
+			Guidelines:
+			- Provide a clear, concise response
+			- Focus on the key information from the event
+			- Ensure the response is appropriate for blockchain storage
+			- Keep responses under 500 characters when possible`;
 	}
 
 	/**
