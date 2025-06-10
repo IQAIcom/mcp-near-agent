@@ -1,9 +1,5 @@
-import {
-	type Account,
-	type ConnectConfig,
-	KeyPairSigner,
-	Near,
-} from "near-api-js";
+import { Account, KeyPairSigner } from "near-api-js";
+import { JsonRpcProvider } from "near-api-js/lib/providers/json-rpc-provider.js";
 import { env } from "../env.js";
 
 export class AuthManager {
@@ -29,14 +25,10 @@ export class AuthManager {
 
 		try {
 			const signer = KeyPairSigner.fromSecretKey(env.ACCOUNT_KEY);
-			const connectConfig: ConnectConfig = {
-				networkId: env.NEAR_NETWORK_ID,
-				nodeUrl: env.NEAR_NODE_URL,
-				signer,
-			};
-
-			const near = new Near(connectConfig);
-			this.account = await near.account(env.ACCOUNT_ID);
+			const provider = new JsonRpcProvider({
+				url: env.NEAR_NODE_URL,
+			});
+			this.account = new Account(env.ACCOUNT_ID, provider, signer);
 			this.isInitialized = true;
 
 			console.log(`✅ NEAR account initialized: ${env.ACCOUNT_ID}`);
@@ -61,9 +53,9 @@ export class AuthManager {
 		if (!this.account) return false;
 
 		try {
-			await this.account.state();
+			await this.account.getState();
 			return true;
-		} catch {
+		} catch (e) {
 			return false;
 		}
 	}

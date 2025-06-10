@@ -1,14 +1,10 @@
 import { EventEmitter } from "node:events";
-import {
-	type Account,
-	type ConnectConfig,
-	KeyPair,
-	connect,
-	keyStores,
-} from "near-api-js";
+
+import type { Account } from "near-api-js";
 import * as cron from "node-cron";
 import { env } from "../env.js";
 import type { AgentEvent } from "../types.js";
+import { AuthManager } from "./auth-manager.js";
 import type { EventSubscription } from "./subscription-manager.js";
 
 export interface BlockProcessingState {
@@ -48,40 +44,27 @@ export class EventListener extends EventEmitter<EventListenerEvents> {
 	private static readonly BATCH_SIZE = 5;
 	private static readonly POLL_DELAY = 500; // ms between batches
 
-	private account: Account | null = null;
-	private isInitialized = false;
+	private authManager: AuthManager;
 	private processingStates = new Map<string, BlockProcessingState>();
 
 	constructor(config: EventListenerConfig = {}) {
 		super();
+		this.authManager = AuthManager.getInstance();
 	}
 
 	/**
-	 * Initialize the NEAR connection
+	 * Initialize the NEAR connection using AuthManager
 	 */
 	public async initialize(): Promise<void> {
-		if (this.isInitialized) {
+		if (this.authManager.isReady()) {
+			console.log("✅ EventListener using existing NEAR connection");
 			return;
 		}
 
-		console.log("🔑 Setting up NEAR connection for EventListener...");
+		console.log("🔑 Initializing NEAR connection for EventListener...");
 
 		try {
-			const keyStore = new keyStores.InMemoryKeyStore();
-			const keyPair = KeyPair.fromString(env.ACCOUNT_KEY);
-
-			await keyStore.setKey(env.NEAR_NETWORK_ID, env.ACCOUNT_ID, keyPair);
-
-			const connectConfig: ConnectConfig = {
-				networkId: env.NEAR_NETWORK_ID,
-				nodeUrl: env.NEAR_NODE_URL,
-				keyStore,
-			};
-
-			const near = await connect(connectConfig);
-			this.account = await near.account(env.ACCOUNT_ID);
-			this.isInitialized = true;
-
+			await this.authManager.initialize();
 			console.log("✅ EventListener initialized successfully");
 		} catch (error) {
 			console.error("❌ Failed to initialize EventListener:", error);
@@ -92,10 +75,23 @@ export class EventListener extends EventEmitter<EventListenerEvents> {
 	}
 
 	/**
+	 * Get the NEAR account from AuthManager
+	 */
+	private getAccount(): Account {
+		const account = this.authManager.getAccount();
+		if (!account) {
+			throw new Error(
+				"EventListener not initialized. Call initialize() first.",
+			);
+		}
+		return account;
+	}
+
+	/**
 	 * Start listening for events for a specific subscription
 	 */
 	public startListening(subscription: EventSubscription): cron.ScheduledTask {
-		if (!this.isInitialized || !this.account) {
+		if (!this.authManager.isReady()) {
 			throw new Error(
 				"EventListener not initialized. Call initialize() first.",
 			);
@@ -234,11 +230,8 @@ export class EventListener extends EventEmitter<EventListenerEvents> {
 		let eventsFound = 0;
 
 		try {
-			if (!this.account) {
-				throw new Error("Account not initialized");
-			}
-
-			const block = await this.account.provider.viewBlock({
+			const account = this.getAccount();
+			const block = await account.provider.viewBlock({
 				blockId: blockHeight,
 			});
 
@@ -277,11 +270,8 @@ export class EventListener extends EventEmitter<EventListenerEvents> {
 	 * Get the current block and initialize lastBlockHeight if needed
 	 */
 	private async getCurrentBlock(state: BlockProcessingState): Promise<any> {
-		if (!this.account) {
-			throw new Error("Account not initialized");
-		}
-
-		const currentBlock = await this.account.provider.viewBlock({
+		const account = this.getAccount();
+		const currentBlock = await account.provider.viewBlock({
 			finality: "final",
 		});
 
@@ -301,20 +291,17 @@ export class EventListener extends EventEmitter<EventListenerEvents> {
 		block: any,
 		contractId: string,
 	): Promise<any[]> {
-		if (!this.account) {
-			throw new Error("Account not initialized");
-		}
-
+		const account = this.getAccount();
 		const relevantReceipts = [];
 
 		try {
-			const blockDetails = await this.account.provider.viewBlock({
+			const blockDetails = await account.provider.viewBlock({
 				blockId: block.header.height,
 			});
 
 			for (const chunk of blockDetails.chunks) {
 				try {
-					const chunkDetails = await this.account.provider.viewChunk(
+					const chunkDetails = await account.provider.viewChunk(
 						chunk.chunk_hash,
 					);
 
@@ -420,11 +407,8 @@ export class EventListener extends EventEmitter<EventListenerEvents> {
 						state.processedTransactionIds = new Set(keepIds);
 					}
 
-					if (!this.account) {
-						throw Error("Account not initialized");
-					}
-
-					const txStatus = await this.account.provider.viewTransactionStatus(
+					const account = this.getAccount();
+					const txStatus = await account.provider.viewTransactionStatus(
 						txHash,
 						subscription.contractId,
 						"INCLUDED",
@@ -490,8 +474,9 @@ export class EventListener extends EventEmitter<EventListenerEvents> {
 	public getStats() {
 		const states = Array.from(this.processingStates.entries());
 		return {
-			isInitialized: this.isInitialized,
+			isInitialized: this.authManager.isReady(),
 			activeSubscriptions: states.length,
+			authManagerStatus: this.authManager.getStatus(),
 			processingStates: states.map(([id, state]) => ({
 				subscriptionId: id,
 				lastBlockHeight: state.lastBlockHeight,
@@ -508,8 +493,7 @@ export class EventListener extends EventEmitter<EventListenerEvents> {
 		console.log("🧹 Cleaning up EventListener...");
 		this.processingStates.clear();
 		this.removeAllListeners();
-		this.isInitialized = false;
-		this.account = null;
+
 		console.log("✅ EventListener cleaned up");
 	}
 }

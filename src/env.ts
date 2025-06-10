@@ -21,7 +21,7 @@ export const envSchema = z.object({
 	ACCOUNT_KEY: keyPairSchema,
 	PATH: z.string(),
 	NEAR_NETWORK_ID: z.string().default("mainnet"),
-	NEAR_NODE_URL: z.string().default("https://rpc.web4.near.page/account/near"),
+	NEAR_NODE_URL: z.string().default("https://1rpc.io/near"),
 	NEAR_GAS_LIMIT: z.string().default("300000000000000"),
 });
 
