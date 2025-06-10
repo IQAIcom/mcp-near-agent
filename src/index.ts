@@ -7,7 +7,7 @@ async function main() {
 	console.log("Initializing MCP Near Server...");
 
 	const server = new FastMCP({
-		name: "IQAI Near MCP Server",
+		name: "Near MCP Server",
 		version: "0.0.1",
 	});
 
