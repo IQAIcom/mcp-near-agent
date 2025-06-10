@@ -27,53 +27,48 @@ export const listWatchingTool: Tool<
 
 			if (status.totalSubscriptions === 0) {
 				return dedent`
-        📭 No events are currently being watched.
+					📭 No events are currently being watched.
 
-        🚀 To start watching events, use the watch_near_event tool with:
-        • contractId: The NEAR contract to monitor
-        • eventName: The specific event to watch for
-        • responseMethodName: The contract method to call with responses`;
+					🚀 To start watching events, use the watch_near_event tool with:
+					• contractId: The NEAR contract to monitor
+					• eventName: The specific event to watch for
+					• responseMethodName: The contract method to call with responses`;
 			}
 
 			let output = dedent`
-      📊 NEAR Event Watching Status
+				📊 NEAR Event Watching Status
 
-      🔧 System Status: ${status.isInitialized ? "🟢 Initialized" : "🔴 Not Initialized"}
-      📈 Total Subscriptions: ${status.totalSubscriptions}
+				🔧 System Status: ${status.isInitialized ? "🟢 Initialized" : "🔴 Not Initialized"}
+				📈 Total Subscriptions: ${status.totalSubscriptions}
 
-      📋 Active Subscriptions:`;
+				📋 Active Subscriptions:`;
+
 			status.subscriptions.forEach((sub, index) => {
 				const statusIcon = sub.isActive ? "🟢" : "🔴";
 				const lastEvent = sub.lastEventAt
 					? new Date(sub.lastEventAt).toLocaleString()
 					: "Never";
 
-				output += dedent`
-
-						${index + 1}. ${statusIcon} ${sub.eventName} on ${sub.contractId}
-									• Response Method: ${sub.responseMethodName}
-									• Polling: ${sub.cronExpression}
-									• Created: ${new Date(sub.createdAt).toLocaleString()}
-									• Last Event: ${lastEvent}
-									• ID: ${sub.id}`;
+				output += `\n\n${index + 1}. ${statusIcon} ${sub.eventName} on ${sub.contractId}
+   • Response Method: ${sub.responseMethodName}
+   • Polling: ${sub.cronExpression}
+   • Created: ${new Date(sub.createdAt).toLocaleString()}
+   • Last Event: ${lastEvent}
+   • ID: ${sub.id}`;
 			});
 
 			if (includeStats && stats) {
-				output += dedent`
-
-						📊 Performance Statistics:
-						🎯 Events Detected: ${stats.totalEventsDetected}
-						⚡ Events Processed: ${stats.totalEventsProcessed}
-						✅ Success Rate: ${stats.successRate.toFixed(1)}%
-						⏱️ Avg Processing Time: ${stats.averageProcessingTime.toFixed(0)}ms
-						🕐 Uptime: ${Math.floor(stats.uptime / 1000 / 60)} minutes`;
+				output += `\n\n📊 Performance Statistics:
+🎯 Events Detected: ${stats.totalEventsDetected}
+⚡ Events Processed: ${stats.totalEventsProcessed}
+✅ Success Rate: ${stats.successRate.toFixed(1)}%
+⏱️ Avg Processing Time: ${stats.averageProcessingTime.toFixed(0)}ms
+🕐 Uptime: ${Math.floor(stats.uptime / 1000 / 60)} minutes`;
 			}
 
-			output += dedent`
-
-					💡 Management Commands:
-					• Use stop_watching_near_event to stop specific subscriptions
-					• Use watch_near_event to add new event monitoring`;
+			output += `\n\n💡 Management Commands:
+• Use stop_watching_near_event to stop specific subscriptions
+• Use watch_near_event to add new event monitoring`;
 
 			return output;
 		} catch (error: unknown) {
@@ -85,9 +80,9 @@ export const listWatchingTool: Tool<
 			console.error(`[LIST_WATCHING_TOOL] Error: ${message}`);
 
 			return dedent`
-					❌ Failed to list watched events: ${message}
+				❌ Failed to list watched events: ${message}
 
-					🔧 This might be a temporary issue. Please try again.`;
+				🔧 This might be a temporary issue. Please try again.`;
 		}
 	},
 };
