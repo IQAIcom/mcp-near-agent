@@ -1,14 +1,7 @@
 import dedent from "dedent";
 import type { FastMCPSession, Tool } from "fastmcp";
-import {
-	type Account,
-	type ConnectConfig,
-	KeyPair,
-	connect,
-	keyStores,
-} from "near-api-js";
 import z from "zod";
-import { env } from "../env.js";
+import { AuthManager } from "../services/auth-manager.js";
 import { eventWatcher } from "../services/event-watcher.js";
 
 const watchEventSchema = z.object({
@@ -24,6 +17,9 @@ const watchEventSchema = z.object({
 			"Cron expression for polling frequency (default: every 10 seconds)",
 		),
 });
+
+// Get singleton instance of AuthManager
+const authManager = AuthManager.getInstance();
 
 export const watchEventTool: Tool<
 	Record<string, unknown> | undefined,
@@ -42,9 +38,24 @@ export const watchEventTool: Tool<
 				`🎯 Starting to watch for '${eventName}' events on contract '${contractId}'`,
 			);
 
+			// Initialize NEAR account using AuthManager
+			if (!authManager.isReady()) {
+				console.log("🔄 Initializing NEAR account via AuthManager...");
+				await authManager.initialize();
+			}
+
+			// Validate connection
+			const isValid = await authManager.validateConnection();
+			if (!isValid) {
+				throw new Error("NEAR account connection is not valid");
+			}
+
 			// Initialize EventWatcher if not already done
 			if (!eventWatcher.getWatchingStatus().isInitialized) {
-				const account = await initializeNearAccount();
+				const account = authManager.getAccount();
+				if (!account) {
+					throw new Error("Failed to get NEAR account from AuthManager");
+				}
 				await eventWatcher.initialize(account);
 			}
 
@@ -65,6 +76,9 @@ export const watchEventTool: Tool<
 			// Set up event listeners for this session
 			setupEventListeners(subscriptionId);
 
+			// Get auth status for response
+			const authStatus = authManager.getStatus();
+
 			return dedent`
 			🎯 Successfully started watching for '${eventName}' events!
 
@@ -76,6 +90,11 @@ export const watchEventTool: Tool<
 			• Subscription ID: ${subscriptionId}
 			• Status: 🟢 Active
 
+			🔐 Authentication Status:
+			• Account: ${authStatus.accountId}
+			• Network: ${authStatus.networkId}
+			• Connection: ✅ Valid
+
 			🔔 The system will now monitor the blockchain and automatically process events with AI responses.`;
 		} catch (error: unknown) {
 			const message =
@@ -85,47 +104,26 @@ export const watchEventTool: Tool<
 
 			console.error(`[WATCH_EVENT_TOOL] Error: ${message}`);
 
+			// Get auth status for troubleshooting
+			const authStatus = authManager.getStatus();
+
 			return dedent`
 			❌ Failed to start watching events: ${message}
+
+			🔐 Authentication Status:
+			• Initialized: ${authStatus.isInitialized ? "✅" : "❌"}
+			• Account: ${authStatus.accountId || "Not available"}
+			• Network: ${authStatus.networkId}
 
 			💡 Troubleshooting tips:
 			• Check if the contract ID is valid
 			• Ensure the event name matches the contract's events
-			• Verify your NEAR account has sufficient balance for gas fees`;
+			• Verify your NEAR account has sufficient balance for gas fees
+			• Check NEAR network connectivity
+			• Validate environment variables (ACCOUNT_KEY, ACCOUNT_ID, etc.)`;
 		}
 	},
 };
-
-/**
- * Initialize NEAR account connection
- */
-async function initializeNearAccount(): Promise<Account> {
-	console.log("🔑 Initializing NEAR account connection...");
-
-	try {
-		const keyStore = new keyStores.InMemoryKeyStore();
-		const keyPair = KeyPair.fromString(env.ACCOUNT_KEY);
-
-		await keyStore.setKey(env.NEAR_NETWORK_ID, env.ACCOUNT_ID, keyPair);
-
-		const connectConfig: ConnectConfig = {
-			networkId: env.NEAR_NETWORK_ID,
-			nodeUrl: env.NEAR_NODE_URL,
-			keyStore,
-		};
-
-		const near = await connect(connectConfig);
-		const account = await near.account(env.ACCOUNT_ID);
-
-		console.log(`✅ NEAR account initialized: ${env.ACCOUNT_ID}`);
-		return account;
-	} catch (error) {
-		console.error("❌ Failed to initialize NEAR account:", error);
-		throw new Error(
-			`NEAR account initialization failed: ${error instanceof Error ? error.message : "Unknown error"}`,
-		);
-	}
-}
 
 /**
  * Set up event listeners for real-time updates
@@ -183,6 +181,25 @@ function setupEventListeners(subscriptionId: string): void {
 	eventWatcher.on("watcher:stopped", (stoppedSubId) => {
 		if (stoppedSubId === subscriptionId) {
 			console.log(`🛑 Watcher stopped for subscription ${subscriptionId}`);
+		}
+	});
+
+	// Listen for authentication issues
+	eventWatcher.on("watcher:error", ({ subscriptionId: errorSubId, error }) => {
+		if (errorSubId === subscriptionId) {
+			// Check if it's an auth-related error
+			const errorMessage =
+				error instanceof Error ? error.message : String(error);
+			if (errorMessage.includes("account") || errorMessage.includes("auth")) {
+				console.warn(
+					"🔐 Authentication issue detected, attempting to reconnect...",
+				);
+				authManager.validateConnection().then((isValid) => {
+					if (!isValid) {
+						console.error("❌ Authentication validation failed");
+					}
+				});
+			}
 		}
 	});
 }
