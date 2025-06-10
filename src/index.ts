@@ -7,7 +7,7 @@ async function main() {
 	console.log("Initializing MCP Near Server...");
 
 	const server = new FastMCP({
-		name: "Near MCP Server",
+		name: "Near Agent MCP Server",
 		version: "0.0.1",
 	});
 
@@ -20,10 +20,10 @@ async function main() {
 		await server.start({
 			transportType: "stdio",
 		});
-		console.log("✅ IQ Near MCP Server started successfully over stdio.");
+		console.log("✅ Near Agent MCP Server started successfully over stdio.");
 		console.log("You can now connect to it using an MCP client.");
 	} catch (error) {
-		console.error("❌ Failed to start IQ Near MCP Server:", error);
+		console.error("❌ Failed to start Near Agent MCP Server:", error);
 		process.exit(1);
 	}
 }
