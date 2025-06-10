@@ -7,7 +7,9 @@
 	"bin": {
 		"mcp-near": "dist/index.js"
 	},
-	"files": ["dist"],
+	"files": [
+		"dist"
+	],
 	"scripts": {
 		"build": "tsc && shx chmod +x dist/index.js",
 		"prepare": "husky",
@@ -35,7 +37,11 @@
 		"type": "git",
 		"url": "git+https://github.com/IQAIcom/mcp-near.git"
 	},
-	"keywords": ["mcp", "Near", "iqagents"],
+	"keywords": [
+		"mcp",
+		"Near",
+		"iqagents"
+	],
 	"author": "IQAI",
 	"license": "ISC",
 	"bugs": {
@@ -49,6 +55,7 @@
 		"husky": "^9.1.7",
 		"lint-staged": "^16.1.0",
 		"shx": "^0.3.4",
+		"tsup": "^8.5.0",
 		"typescript": "^5.8.3"
 	},
 	"dependencies": {
