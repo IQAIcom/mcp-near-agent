@@ -1,7 +1,7 @@
 import { EventEmitter } from "node:events";
 import type { FastMCPSession } from "fastmcp";
-import type { Account } from "near-api-js";
 import type { AgentEvent } from "../types.js";
+import { AuthManager } from "./auth-manager.js";
 import { EventListener } from "./event-listener.js";
 import { EventProcessor } from "./event-processor.js";
 import {
@@ -54,9 +54,9 @@ export interface EventWatcherStats {
 }
 
 export class EventWatcher extends EventEmitter<EventWatcherEvents> {
+	private authManager: AuthManager;
 	private eventListener: EventListener;
 	private eventProcessor: EventProcessor;
-	private account: Account | null = null;
 	private isInitialized = false;
 	private startTime = Date.now();
 
@@ -72,6 +72,7 @@ export class EventWatcher extends EventEmitter<EventWatcherEvents> {
 	constructor(config: EventWatcherConfig = {}) {
 		super();
 
+		this.authManager = AuthManager.getInstance();
 		this.eventListener = new EventListener({
 			networkId: config.networkId,
 			nodeUrl: config.nodeUrl,
@@ -84,9 +85,9 @@ export class EventWatcher extends EventEmitter<EventWatcherEvents> {
 	}
 
 	/**
-	 * Initialize the EventWatcher with NEAR account
+	 * Initialize the EventWatcher - handles all authentication internally
 	 */
-	public async initialize(account: Account): Promise<void> {
+	private async initialize(): Promise<void> {
 		if (this.isInitialized) {
 			return;
 		}
@@ -94,7 +95,22 @@ export class EventWatcher extends EventEmitter<EventWatcherEvents> {
 		console.log("🚀 Initializing EventWatcher...");
 
 		try {
-			this.account = account;
+			// Initialize AuthManager if not already done
+			if (!this.authManager.isReady()) {
+				console.log("🔄 Initializing NEAR account via AuthManager...");
+				await this.authManager.initialize();
+			}
+
+			// Validate connection
+			const isValid = await this.authManager.validateConnection();
+			if (!isValid) {
+				throw new Error("NEAR account connection is not valid");
+			}
+
+			const account = this.authManager.getAccount();
+			if (!account) {
+				throw new Error("Failed to get NEAR account from AuthManager");
+			}
 
 			// Initialize components
 			await this.eventListener.initialize();
@@ -114,9 +130,8 @@ export class EventWatcher extends EventEmitter<EventWatcherEvents> {
 	 * Start watching for a specific event
 	 */
 	public async watchEvent(request: WatchEventRequest): Promise<string> {
-		if (!this.isInitialized) {
-			throw new Error("EventWatcher not initialized. Call initialize() first.");
-		}
+		// Initialize if not already done
+		await this.initialize();
 
 		const {
 			contractId,
@@ -372,12 +387,13 @@ export class EventWatcher extends EventEmitter<EventWatcherEvents> {
 			this.emit("event:detected", { event, subscription });
 
 			// Process the event
-			if (this.account) {
+			const account = this.authManager.getAccount();
+			if (account) {
 				try {
 					const result = await this.eventProcessor.processEvent({
 						subscription,
 						event,
-						account: this.account,
+						account,
 					});
 
 					this.updateProcessingStats(result.success, result.processingTime);
@@ -473,7 +489,6 @@ export class EventWatcher extends EventEmitter<EventWatcherEvents> {
 
 			// Reset state
 			this.isInitialized = false;
-			this.account = null;
 			this.removeAllListeners();
 
 			console.log("✅ EventWatcher cleaned up successfully");

@@ -2,7 +2,7 @@ import {
 	type Account,
 	type ConnectConfig,
 	KeyPair,
-	connect,
+	Near,
 	keyStores,
 } from "near-api-js";
 import { env } from "../env.js";
@@ -40,7 +40,7 @@ export class AuthManager {
 				keyStore,
 			};
 
-			const near = await connect(connectConfig);
+			const near = new Near(connectConfig);
 			this.account = await near.account(env.ACCOUNT_ID);
 			this.isInitialized = true;
 

@@ -18,7 +18,7 @@ const watchEventSchema = z.object({
 		),
 });
 
-// Get singleton instance of AuthManager
+// Get singleton instance of AuthManager for status reporting only
 const authManager = AuthManager.getInstance();
 
 export const watchEventTool: Tool<
@@ -38,33 +38,12 @@ export const watchEventTool: Tool<
 				`🎯 Starting to watch for '${eventName}' events on contract '${contractId}'`,
 			);
 
-			// Initialize NEAR account using AuthManager
-			if (!authManager.isReady()) {
-				console.log("🔄 Initializing NEAR account via AuthManager...");
-				await authManager.initialize();
-			}
-
-			// Validate connection
-			const isValid = await authManager.validateConnection();
-			if (!isValid) {
-				throw new Error("NEAR account connection is not valid");
-			}
-
-			// Initialize EventWatcher if not already done
-			if (!eventWatcher.getWatchingStatus().isInitialized) {
-				const account = authManager.getAccount();
-				if (!account) {
-					throw new Error("Failed to get NEAR account from AuthManager");
-				}
-				await eventWatcher.initialize(account);
-			}
-
 			// Check if already watching this event
 			if (eventWatcher.isWatching(contractId, eventName)) {
 				return `⚠️ Already watching event '${eventName}' on contract '${contractId}'. Use list_watched_near_events to see all active subscriptions.`;
 			}
 
-			// Start watching the event
+			// EventWatcher will handle all authentication internally
 			const subscriptionId = await eventWatcher.watchEvent({
 				contractId,
 				eventName,
@@ -76,7 +55,7 @@ export const watchEventTool: Tool<
 			// Set up event listeners for this session
 			setupEventListeners(subscriptionId);
 
-			// Get auth status for response
+			// Get auth status for response (AuthManager should be initialized by now)
 			const authStatus = authManager.getStatus();
 
 			return dedent`
