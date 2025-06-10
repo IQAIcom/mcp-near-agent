@@ -14,6 +14,7 @@ export const stopWatchingTool: Tool<
 > = {
 	name: "stop_watching_near_event",
 	description: "Stop watching for specific events on a NEAR contract",
+	parameters: stopWatchingSchema,
 	execute: async (params) => {
 		try {
 			const { contractId, eventName } = params;

@@ -13,6 +13,7 @@ export const listWatchingTool: Tool<
 > = {
 	name: "list_watched_near_events",
 	description: "List all currently watched NEAR events and their status",
+	parameters: listWatchingSchema,
 	execute: async (params) => {
 		try {
 			const { includeStats = false } = params;

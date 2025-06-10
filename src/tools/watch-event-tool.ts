@@ -32,6 +32,7 @@ export const watchEventTool: Tool<
 	name: "watch_near_event",
 	description:
 		"Start watching for specific events on a NEAR contract and process them with AI responses",
+	parameters: watchEventSchema,
 	execute: async (params, { session }) => {
 		try {
 			const { eventName, contractId, responseMethodName, cronExpression } =
