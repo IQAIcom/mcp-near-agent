@@ -277,7 +277,6 @@ export class EventWatcher extends EventEmitter<EventWatcherEvents> {
 	 */
 	public getStats(): EventWatcherStats {
 		const subscriptionStats = subscriptionManager.getStats();
-		const processorStats = this.eventProcessor.getStats();
 
 		return {
 			totalSubscriptions: subscriptionStats.total,
