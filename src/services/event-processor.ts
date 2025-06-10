@@ -44,7 +44,7 @@ export interface ProcessingStats {
 
 export class EventProcessor extends EventEmitter<EventProcessorEvents> {
 	private static readonly DEFAULT_MAX_TOKENS = 1000;
-	private static readonly DEFAULT_TIMEOUT = 30000; // 30 seconds
+	private static readonly DEFAULT_TIMEOUT = 2 * 60 * 1000; // 2 minutes
 	private static readonly DEFAULT_SYSTEM_PROMPT =
 		"You are a helpful NEAR blockchain assistant. Process the following event data and provide a concise response.";
 
