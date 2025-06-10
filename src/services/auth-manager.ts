@@ -1,9 +1,8 @@
 import {
 	type Account,
 	type ConnectConfig,
-	KeyPair,
+	KeyPairSigner,
 	Near,
-	keyStores,
 } from "near-api-js";
 import { env } from "../env.js";
 
@@ -29,15 +28,11 @@ export class AuthManager {
 		console.log("🔑 Initializing NEAR account connection...");
 
 		try {
-			const keyStore = new keyStores.InMemoryKeyStore();
-			const keyPair = KeyPair.fromString(env.ACCOUNT_KEY);
-
-			await keyStore.setKey(env.NEAR_NETWORK_ID, env.ACCOUNT_ID, keyPair);
-
+			const signer = KeyPairSigner.fromSecretKey(env.ACCOUNT_KEY);
 			const connectConfig: ConnectConfig = {
 				networkId: env.NEAR_NETWORK_ID,
 				nodeUrl: env.NEAR_NODE_URL,
-				keyStore,
+				signer,
 			};
 
 			const near = new Near(connectConfig);
