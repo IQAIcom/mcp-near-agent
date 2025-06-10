@@ -1,5 +1,5 @@
 import dedent from "dedent";
-import type { FastMCPSession, Tool } from "fastmcp";
+import type { Tool } from "fastmcp";
 import z from "zod";
 import { eventWatcher } from "../services/event-watcher.js";
 
