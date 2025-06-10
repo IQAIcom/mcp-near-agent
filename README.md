@@ -1,4 +1,4 @@
-# 🌊 MCP-Near: NEAR Protocol MCP Server
+# 🌊 Near Agent MCP Server
 
 A Model Context Protocol (MCP) server enabling smart contract interaction, transaction handling, and event listening on the NEAR blockchain for AI agents and applications.
 
