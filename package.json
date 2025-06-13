@@ -7,7 +7,9 @@
 	"bin": {
 		"mcp-near": "dist/index.js"
 	},
-	"files": ["dist"],
+	"files": [
+		"dist"
+	],
 	"scripts": {
 		"build": "tsc && shx chmod +x dist/index.js",
 		"prepare": "husky",
@@ -35,7 +37,11 @@
 		"type": "git",
 		"url": "git+https://github.com/IQAIcom/mcp-near.git"
 	},
-	"keywords": ["mcp", "Near", "iqagents"],
+	"keywords": [
+		"mcp",
+		"Near",
+		"iqagents"
+	],
 	"author": "IQAI",
 	"license": "ISC",
 	"bugs": {
@@ -60,6 +66,7 @@
 		"fastmcp": "^2.2.1",
 		"gql.tada": "^1.8.10",
 		"graphql-request": "^7.1.2",
+		"mcps-logger": "^1.0.0",
 		"near-api-js": "6.0.2",
 		"node-cron": "^4.1.0",
 		"viem": "^2.30.6",
