@@ -32,6 +32,9 @@ importers:
       graphql-request:
         specifier: ^7.1.2
         version: 7.2.0(graphql@16.11.0)
+      mcps-logger:
+        specifier: ^1.0.0
+        version: 1.0.0
       near-api-js:
         specifier: 6.0.2
         version: 6.0.2(7a1c48c26796da9bf69f5b37c9133970)
@@ -993,6 +996,10 @@ packages:
 
   mcp-proxy@3.3.0:
     resolution: {integrity: sha512-xyFKQEZ64HC7lxScBHjb5fxiPoyJjjkPhwH5hWUT0oL/ttCpMGZDJrYZRGFKVJiLLkrZPAkHnMGkI+WMlyD/cg==}
+    hasBin: true
+
+  mcps-logger@1.0.0:
+    resolution: {integrity: sha512-oFxJLckvamGMIhZWTAy/IBMl84xy1qaobWKt3uJomev4N2D+xDvNNxrt6oqk4BCThSGn33HqEyO77rJfew7K1w==}
     hasBin: true
 
   media-typer@1.1.0:
@@ -2661,6 +2668,8 @@ snapshots:
       yargs: 17.7.2
     transitivePeerDependencies:
       - supports-color
+
+  mcps-logger@1.0.0: {}
 
   media-typer@1.1.0: {}
 
