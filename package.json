@@ -1,6 +1,6 @@
 {
 	"name": "@iqai/mcp-near-agent",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"description": "Mcp server for Near",
 	"main": "src/index.ts",
 	"type": "module",
