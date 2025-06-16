@@ -1,9 +1,10 @@
 import { FastMCP } from "fastmcp";
+import { env } from "./env.js";
 import { listWatchingTool } from "./tools/list-watching-tool.js";
 import { stopWatchingTool } from "./tools/stop-watching-tool.js";
 import { watchEventTool } from "./tools/watch-event-tool.js";
 
-if (process.env.DEBUG === "DEBUG") {
+if (env.DEBUG) {
 	import("mcps-logger/console");
 }
 
