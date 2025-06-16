@@ -1,5 +1,11 @@
 # @iqai/mcp-near-agent
 
+## 0.0.4
+
+### Patch Changes
+
+- d0f02e7: Fixes add mcp logger only on debug mode
+
 ## 0.0.3
 
 ### Patch Changes
