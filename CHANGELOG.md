@@ -1,5 +1,11 @@
 # @iqai/mcp-near-agent
 
+## 0.0.6
+
+### Patch Changes
+
+- 3014978: Reverts service refactoring
+
 ## 0.0.5
 
 ### Patch Changes
