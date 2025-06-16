@@ -2,20 +2,46 @@ import { EventEmitter } from "node:events";
 import dedent from "dedent";
 import type { Account } from "near-api-js";
 import { env } from "../env.js";
-import type {
-	AgentEvent,
-	EventContext,
-	EventProcessorEvents,
-	EventSubscription,
-	ProcessingResult,
-	ProcessingStats,
-} from "../types.js";
+import type { AgentEvent } from "../types.js";
+import type { EventSubscription } from "./subscription-manager.js";
 
-/**
- * Handles event processing through MCP and blockchain responses.
- * Single responsibility: Process detected events by communicating with MCP and sending responses to blockchain.
- * No queue management, no orchestration - just pure event processing.
- */
+export interface ProcessingResult {
+	success: boolean;
+	response?: string;
+	error?: string;
+	requestId: string;
+	subscription: EventSubscription;
+	event: AgentEvent;
+	processingTime: number;
+}
+
+export interface EventContext {
+	subscription: EventSubscription;
+	event: AgentEvent;
+	account: Account;
+}
+
+// Type-safe event definitions
+export interface EventProcessorEvents {
+	"event:processed": [result: ProcessingResult];
+	"event:processing-error": [result: ProcessingResult];
+	"event:mcp-request": [context: EventContext];
+	"event:mcp-response": [context: EventContext, response: any];
+	"event:blockchain-response": [context: EventContext, txHash: string];
+	"queue:added": [requestId: string, context: EventContext];
+	"queue:removed": [requestId: string];
+	"stats:updated": [stats: ProcessingStats];
+}
+
+export interface ProcessingStats {
+	totalProcessed: number;
+	successful: number;
+	failed: number;
+	averageProcessingTime: number;
+	successRate: number;
+	currentQueueSize: number;
+}
+
 export class EventProcessor extends EventEmitter<EventProcessorEvents> {
 	private static readonly DEFAULT_MAX_TOKENS = 1000;
 	private static readonly DEFAULT_TIMEOUT = 2 * 60 * 1000; // 2 minutes
@@ -23,12 +49,18 @@ export class EventProcessor extends EventEmitter<EventProcessorEvents> {
 		"You are a helpful NEAR blockchain assistant. Process the following event data and provide a concise response.";
 
 	private account: Account | null = null;
+	private processingQueue = new Map<string, EventContext>();
 	private processingStats = {
 		totalProcessed: 0,
 		successful: 0,
 		failed: 0,
-		totalProcessingTime: 0,
+		averageProcessingTime: 0,
 	};
+
+	constructor(account?: Account) {
+		super();
+		this.account = account || null;
+	}
 
 	/**
 	 * Set the NEAR account for blockchain interactions
@@ -49,6 +81,10 @@ export class EventProcessor extends EventEmitter<EventProcessorEvents> {
 		);
 
 		try {
+			// Add to processing queue
+			this.processingQueue.set(event.requestId, context);
+			this.emit("queue:added", event.requestId, context);
+
 			// Request sampling from MCP client
 			this.emit("event:mcp-request", context);
 			const mcpResponse = await this.requestMCPSampling(event, subscription);
@@ -104,6 +140,10 @@ export class EventProcessor extends EventEmitter<EventProcessorEvents> {
 			console.error(`❌ Failed to process event ${event.requestId}:`, error);
 
 			return result;
+		} finally {
+			// Remove from processing queue
+			this.processingQueue.delete(event.requestId);
+			this.emit("queue:removed", event.requestId);
 		}
 	}
 
@@ -251,7 +291,6 @@ export class EventProcessor extends EventEmitter<EventProcessorEvents> {
 	 */
 	private updateStats(success: boolean, processingTime: number): void {
 		this.processingStats.totalProcessed++;
-		this.processingStats.totalProcessingTime += processingTime;
 
 		if (success) {
 			this.processingStats.successful++;
@@ -259,8 +298,33 @@ export class EventProcessor extends EventEmitter<EventProcessorEvents> {
 			this.processingStats.failed++;
 		}
 
+		// Update average processing time
+		const totalTime =
+			this.processingStats.averageProcessingTime *
+				(this.processingStats.totalProcessed - 1) +
+			processingTime;
+		this.processingStats.averageProcessingTime =
+			totalTime / this.processingStats.totalProcessed;
+
 		// Emit stats update
 		this.emit("stats:updated", this.getStats());
+	}
+
+	/**
+	 * Get current processing queue status
+	 */
+	public getQueueStatus() {
+		return {
+			queueSize: this.processingQueue.size,
+			processingItems: Array.from(this.processingQueue.entries()).map(
+				([requestId, context]) => ({
+					requestId,
+					eventType: context.event.eventType,
+					contractId: context.subscription.contractId,
+					timestamp: context.event.timestamp,
+				}),
+			),
+		};
 	}
 
 	/**
@@ -268,22 +332,42 @@ export class EventProcessor extends EventEmitter<EventProcessorEvents> {
 	 */
 	public getStats(): ProcessingStats {
 		return {
-			totalProcessed: this.processingStats.totalProcessed,
-			successful: this.processingStats.successful,
-			failed: this.processingStats.failed,
-			averageProcessingTime:
-				this.processingStats.totalProcessed > 0
-					? this.processingStats.totalProcessingTime /
-						this.processingStats.totalProcessed
-					: 0,
+			...this.processingStats,
 			successRate:
 				this.processingStats.totalProcessed > 0
 					? (this.processingStats.successful /
 							this.processingStats.totalProcessed) *
 						100
 					: 0,
-			currentQueueSize: 0, // No queue in simplified version
+			currentQueueSize: this.processingQueue.size,
 		};
+	}
+
+	/**
+	 * Check if a request is currently being processed
+	 */
+	public isProcessing(requestId: string): boolean {
+		return this.processingQueue.has(requestId);
+	}
+
+	/**
+	 * Get all currently processing request IDs
+	 */
+	public getProcessingRequestIds(): string[] {
+		return Array.from(this.processingQueue.keys());
+	}
+
+	/**
+	 * Cancel processing for a specific request (if still in queue)
+	 */
+	public cancelProcessing(requestId: string): boolean {
+		if (this.processingQueue.has(requestId)) {
+			this.processingQueue.delete(requestId);
+			this.emit("queue:removed", requestId);
+			console.log(`🚫 Cancelled processing for request: ${requestId}`);
+			return true;
+		}
+		return false;
 	}
 
 	/**
@@ -294,7 +378,7 @@ export class EventProcessor extends EventEmitter<EventProcessorEvents> {
 			totalProcessed: 0,
 			successful: 0,
 			failed: 0,
-			totalProcessingTime: 0,
+			averageProcessingTime: 0,
 		};
 		this.emit("stats:updated", this.getStats());
 		console.log("📊 Processing statistics reset");
@@ -305,11 +389,13 @@ export class EventProcessor extends EventEmitter<EventProcessorEvents> {
 	 */
 	public cleanup(): void {
 		console.log("🧹 Cleaning up EventProcessor...");
+		this.processingQueue.clear();
 		this.removeAllListeners();
 		this.account = null;
 		console.log("✅ EventProcessor cleaned up");
 	}
 
+	// Type-safe event listener methods
 	// Type-safe event listener methods
 	public on<K extends keyof EventProcessorEvents>(
 		event: K,

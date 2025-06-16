@@ -1,15 +1,28 @@
 import { EventEmitter } from "node:events";
-import type { Account } from "near-api-js";
-import { env } from "../env.js";
-import type {
-	AgentEvent,
-	BlockProcessingState,
-	EventSubscription,
-} from "../types.js";
 
-// Type-safe event definitions for BlockPoller
-export interface BlockPollerEvents {
+import type { Account } from "near-api-js";
+import * as cron from "node-cron";
+import { env } from "../env.js";
+import type { AgentEvent } from "../types.js";
+import { AuthManager } from "./auth-manager.js";
+import type { EventSubscription } from "./subscription-manager.js";
+
+export interface BlockProcessingState {
+	lastBlockHeight: number;
+	isProcessing: boolean;
+	processedTransactionIds: Set<string>;
+}
+
+export interface EventListenerConfig {
+	networkId?: string;
+	nodeUrl?: string;
+	gasLimit?: string;
+}
+
+// Type-safe event definitions
+export interface EventListenerEvents {
 	"event:found": [data: { event: AgentEvent; subscription: EventSubscription }];
+	"event:error": [data: { subscription: EventSubscription; error: unknown }];
 	"block:processed": [
 		data: { blockHeight: number; subscriptionId: string; eventsFound: number },
 	];
@@ -24,75 +37,132 @@ export interface BlockPollerEvents {
 			eventsFound: number;
 		},
 	];
+	"state:initialized": [subscriptionId: string];
 }
 
-/**
- * Handles blockchain polling and event detection.
- * Single responsibility: Poll NEAR blocks and extract matching events.
- * Emits events when found, manages block processing state per subscription.
- */
-export class BlockPoller extends EventEmitter<BlockPollerEvents> {
+export class EventListener extends EventEmitter<EventListenerEvents> {
 	private static readonly BATCH_SIZE = 5;
 	private static readonly POLL_DELAY = 500; // ms between batches
 
-	private account: Account | null = null;
+	private authManager: AuthManager;
 	private processingStates = new Map<string, BlockProcessingState>();
 
-	/**
-	 * Set the NEAR account for blockchain interactions
-	 */
-	public setAccount(account: Account): void {
-		this.account = account;
+	constructor(config: EventListenerConfig = {}) {
+		super();
+		this.authManager = AuthManager.getInstance();
 	}
 
 	/**
-	 * Initialize processing state for a subscription
+	 * Initialize the NEAR connection using AuthManager
 	 */
-	public initializeSubscription(subscriptionId: string): void {
+	public async initialize(): Promise<void> {
+		if (this.authManager.isReady()) {
+			console.log("✅ EventListener using existing NEAR connection");
+			return;
+		}
+
+		console.log("🔑 Initializing NEAR connection for EventListener...");
+
+		try {
+			await this.authManager.initialize();
+			console.log("✅ EventListener initialized successfully");
+		} catch (error) {
+			console.error("❌ Failed to initialize EventListener:", error);
+			throw new Error(
+				`EventListener initialization failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+			);
+		}
+	}
+
+	/**
+	 * Get the NEAR account from AuthManager
+	 */
+	private getAccount(): Account {
+		const account = this.authManager.getAccount();
+		if (!account) {
+			throw new Error(
+				"EventListener not initialized. Call initialize() first.",
+			);
+		}
+		return account;
+	}
+
+	/**
+	 * Start listening for events for a specific subscription
+	 */
+	public startListening(subscription: EventSubscription): cron.ScheduledTask {
+		if (!this.authManager.isReady()) {
+			throw new Error(
+				"EventListener not initialized. Call initialize() first.",
+			);
+		}
+
+		const subscriptionId = subscription.id;
+
+		// Initialize processing state for this subscription
 		if (!this.processingStates.has(subscriptionId)) {
 			this.processingStates.set(subscriptionId, {
 				lastBlockHeight: 0,
 				isProcessing: false,
 				processedTransactionIds: new Set<string>(),
 			});
-			console.log(
-				`📍 Initialized processing state for subscription: ${subscriptionId}`,
-			);
+			this.emit("state:initialized", subscriptionId);
 		}
+
+		console.log(
+			`🎯 Starting to listen for '${subscription.eventName}' events on contract '${subscription.contractId}'`,
+		);
+
+		const cronJob = cron.schedule(subscription.cronExpression, async () => {
+			const state = this.processingStates.get(subscriptionId);
+			if (!state || state.isProcessing) {
+				return; // Skip if already processing
+			}
+
+			try {
+				this.emit("polling:started", subscriptionId);
+				const result = await this.pollEventsForSubscription(
+					subscription,
+					state,
+				);
+				this.emit("polling:completed", {
+					subscriptionId,
+					blocksProcessed: result.blocksProcessed,
+					eventsFound: result.eventsFound,
+				});
+			} catch (error) {
+				console.error(
+					`❌ Error polling events for subscription ${subscriptionId}:`,
+					error,
+				);
+				this.emit("event:error", { subscription, error });
+			}
+		});
+
+		cronJob.start();
+		return cronJob;
+	}
+
+	/**
+	 * Stop listening for a specific subscription
+	 */
+	public stopListening(subscriptionId: string): void {
+		this.processingStates.delete(subscriptionId);
+		console.log(`🛑 Stopped listening for subscription: ${subscriptionId}`);
 	}
 
 	/**
 	 * Poll for events for a specific subscription
 	 */
-	public async pollForEvents(subscription: EventSubscription): Promise<{
-		blocksProcessed: number;
-		eventsFound: number;
-	}> {
-		if (!this.account) {
-			throw new Error("BlockPoller account not set. Call setAccount() first.");
-		}
-
-		const state = this.processingStates.get(subscription.id);
-		if (!state) {
-			throw new Error(
-				`Subscription ${subscription.id} not initialized. Call initializeSubscription() first.`,
-			);
-		}
-
-		if (state.isProcessing) {
-			console.log(
-				`⏳ Subscription ${subscription.id} already processing, skipping...`,
-			);
-			return { blocksProcessed: 0, eventsFound: 0 };
-		}
-
+	private async pollEventsForSubscription(
+		subscription: EventSubscription,
+		state: BlockProcessingState,
+	): Promise<{ blocksProcessed: number; eventsFound: number }> {
 		state.isProcessing = true;
 		let blocksProcessed = 0;
 		let eventsFound = 0;
 
 		try {
-			this.emit("polling:started", subscription.id);
-
 			const currentBlock = await this.getCurrentBlock(state);
 			if (!currentBlock) {
 				return { blocksProcessed, eventsFound };
@@ -102,7 +172,7 @@ export class BlockPoller extends EventEmitter<BlockPollerEvents> {
 			const startHeight = state.lastBlockHeight + 1;
 
 			if (startHeight > currentHeight) {
-				return { blocksProcessed, eventsFound }; // No new blocks
+				return { blocksProcessed, eventsFound }; // No new blocks to process
 			}
 
 			console.log(
@@ -113,10 +183,10 @@ export class BlockPoller extends EventEmitter<BlockPollerEvents> {
 			for (
 				let blockHeight = startHeight;
 				blockHeight <= currentHeight;
-				blockHeight += BlockPoller.BATCH_SIZE
+				blockHeight += EventListener.BATCH_SIZE
 			) {
 				const endBatch = Math.min(
-					blockHeight + BlockPoller.BATCH_SIZE - 1,
+					blockHeight + EventListener.BATCH_SIZE - 1,
 					currentHeight,
 				);
 
@@ -138,24 +208,12 @@ export class BlockPoller extends EventEmitter<BlockPollerEvents> {
 				// Add delay between batches to avoid overwhelming the RPC
 				if (endBatch < currentHeight) {
 					await new Promise((resolve) =>
-						setTimeout(resolve, BlockPoller.POLL_DELAY),
+						setTimeout(resolve, EventListener.POLL_DELAY),
 					);
 				}
 			}
 
-			this.emit("polling:completed", {
-				subscriptionId: subscription.id,
-				blocksProcessed,
-				eventsFound,
-			});
-
 			return { blocksProcessed, eventsFound };
-		} catch (error) {
-			console.error(
-				`❌ Error polling for subscription ${subscription.id}:`,
-				error,
-			);
-			throw error;
 		} finally {
 			state.isProcessing = false;
 		}
@@ -172,11 +230,8 @@ export class BlockPoller extends EventEmitter<BlockPollerEvents> {
 		let eventsFound = 0;
 
 		try {
-			if (!this.account) {
-				throw new Error("Account not available");
-			}
-
-			const block = await this.account.provider.viewBlock({
+			const account = this.getAccount();
+			const block = await account.provider.viewBlock({
 				blockId: blockHeight,
 			});
 
@@ -215,11 +270,8 @@ export class BlockPoller extends EventEmitter<BlockPollerEvents> {
 	 * Get the current block and initialize lastBlockHeight if needed
 	 */
 	private async getCurrentBlock(state: BlockProcessingState): Promise<any> {
-		if (!this.account) {
-			throw new Error("Account not available");
-		}
-
-		const currentBlock = await this.account.provider.viewBlock({
+		const account = this.getAccount();
+		const currentBlock = await account.provider.viewBlock({
 			finality: "final",
 		});
 
@@ -239,20 +291,17 @@ export class BlockPoller extends EventEmitter<BlockPollerEvents> {
 		block: any,
 		contractId: string,
 	): Promise<any[]> {
-		if (!this.account) {
-			throw new Error("Account not available");
-		}
-
+		const account = this.getAccount();
 		const relevantReceipts = [];
 
 		try {
-			const blockDetails = await this.account.provider.viewBlock({
+			const blockDetails = await account.provider.viewBlock({
 				blockId: block.header.height,
 			});
 
 			for (const chunk of blockDetails.chunks) {
 				try {
-					const chunkDetails = await this.account.provider.viewChunk(
+					const chunkDetails = await account.provider.viewChunk(
 						chunk.chunk_hash,
 					);
 
@@ -268,6 +317,7 @@ export class BlockPoller extends EventEmitter<BlockPollerEvents> {
 						}
 					}
 				} catch (chunkError) {
+					// Skip this chunk if there's an error
 					console.warn(
 						`⚠️ Error processing chunk ${chunk.chunk_hash}:`,
 						chunkError,
@@ -357,11 +407,8 @@ export class BlockPoller extends EventEmitter<BlockPollerEvents> {
 						state.processedTransactionIds = new Set(keepIds);
 					}
 
-					if (!this.account) {
-						throw new Error("Account not available");
-					}
-
-					const txStatus = await this.account.provider.viewTransactionStatus(
+					const account = this.getAccount();
+					const txStatus = await account.provider.viewTransactionStatus(
 						txHash,
 						subscription.contractId,
 						"INCLUDED",
@@ -422,22 +469,14 @@ export class BlockPoller extends EventEmitter<BlockPollerEvents> {
 	}
 
 	/**
-	 * Remove processing state for a subscription
-	 */
-	public removeSubscription(subscriptionId: string): void {
-		this.processingStates.delete(subscriptionId);
-		console.log(
-			`🗑️ Removed processing state for subscription: ${subscriptionId}`,
-		);
-	}
-
-	/**
 	 * Get processing statistics
 	 */
 	public getStats() {
 		const states = Array.from(this.processingStates.entries());
 		return {
+			isInitialized: this.authManager.isReady(),
 			activeSubscriptions: states.length,
+			authManagerStatus: this.authManager.getStatus(),
 			processingStates: states.map(([id, state]) => ({
 				subscriptionId: id,
 				lastBlockHeight: state.lastBlockHeight,
@@ -448,50 +487,13 @@ export class BlockPoller extends EventEmitter<BlockPollerEvents> {
 	}
 
 	/**
-	 * Check if a subscription is currently processing
-	 */
-	public isProcessing(subscriptionId: string): boolean {
-		const state = this.processingStates.get(subscriptionId);
-		return state ? state.isProcessing : false;
-	}
-
-	/**
 	 * Cleanup resources
 	 */
 	public cleanup(): void {
-		console.log("🧹 Cleaning up BlockPoller...");
+		console.log("🧹 Cleaning up EventListener...");
 		this.processingStates.clear();
 		this.removeAllListeners();
-		this.account = null;
-		console.log("✅ BlockPoller cleaned up");
-	}
 
-	// Type-safe event listener methods
-	public on<K extends keyof BlockPollerEvents>(
-		event: K,
-		listener: (...args: BlockPollerEvents[K]) => void,
-	): this {
-		return super.on(event, listener as any);
-	}
-
-	public emit<K extends keyof BlockPollerEvents>(
-		event: K,
-		...args: BlockPollerEvents[K]
-	): boolean {
-		return super.emit(event, ...(args as any));
-	}
-
-	public off<K extends keyof BlockPollerEvents>(
-		event: K,
-		listener: (...args: BlockPollerEvents[K]) => void,
-	): this {
-		return super.off(event, listener as any);
-	}
-
-	public once<K extends keyof BlockPollerEvents>(
-		event: K,
-		listener: (...args: BlockPollerEvents[K]) => void,
-	): this {
-		return super.once(event, listener as any);
+		console.log("✅ EventListener cleaned up");
 	}
 }
