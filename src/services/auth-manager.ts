@@ -51,13 +51,7 @@ export class AuthManager {
 
 	public async validateConnection(): Promise<boolean> {
 		if (!this.account) return false;
-
-		try {
-			await this.account.getState();
-			return true;
-		} catch (e) {
-			return false;
-		}
+		return true;
 	}
 
 	public reset(): void {
