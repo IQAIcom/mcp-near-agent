@@ -2,7 +2,10 @@ import { FastMCP } from "fastmcp";
 import { listWatchingTool } from "./tools/list-watching-tool.js";
 import { stopWatchingTool } from "./tools/stop-watching-tool.js";
 import { watchEventTool } from "./tools/watch-event-tool.js";
-import "mcps-logger/console";
+
+if (process.env.DEBUG !== "DEBUG") {
+	import("mcps-logger/console");
+}
 
 async function main() {
 	console.log("Initializing MCP Near Server...");
