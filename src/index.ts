@@ -3,7 +3,7 @@ import { listWatchingTool } from "./tools/list-watching-tool.js";
 import { stopWatchingTool } from "./tools/stop-watching-tool.js";
 import { watchEventTool } from "./tools/watch-event-tool.js";
 
-if (process.env.DEBUG !== "DEBUG") {
+if (process.env.DEBUG === "DEBUG") {
 	import("mcps-logger/console");
 }
 
