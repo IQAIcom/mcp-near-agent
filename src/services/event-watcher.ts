@@ -1,35 +1,64 @@
 import { EventEmitter } from "node:events";
-import * as cron from "node-cron";
-import type {
-	AgentEvent,
-	EventSubscription,
-	EventWatcherConfig,
-	EventWatcherEvents,
-	EventWatcherStats,
-	SubscriptionConfig,
-	WatchEventRequest,
-} from "../types.js";
+import type { FastMCPSession } from "fastmcp";
+import type { AgentEvent } from "../types.js";
 import { AuthManager } from "./auth-manager.js";
-import { BlockPoller } from "./block-poller.js";
+import { EventListener } from "./event-listener.js";
 import { EventProcessor } from "./event-processor.js";
+import {
+	type EventSubscription,
+	type SubscriptionConfig,
+	subscriptionManager,
+} from "./subscription-manager.js";
 
-/**
- * Orchestrates event watching by managing subscriptions and coordinating BlockPoller + EventProcessor.
- * Single responsibility: Subscription CRUD + Component coordination + Lifecycle management.
- * Does not handle block polling or event processing directly.
- */
+export interface EventWatcherConfig {
+	networkId?: string;
+	nodeUrl?: string;
+	gasLimit?: string;
+}
+
+export interface WatchEventRequest {
+	contractId: string;
+	eventName: string;
+	responseMethodName: string;
+	cronExpression?: string;
+	session: FastMCPSession;
+}
+
+// Type-safe event definitions
+export interface EventWatcherEvents {
+	"watcher:started": [subscriptionId: string];
+	"watcher:stopped": [subscriptionId: string];
+	"watcher:error": [data: { subscriptionId: string; error: unknown }];
+	"event:detected": [
+		data: { event: AgentEvent; subscription: EventSubscription },
+	];
+	"event:processed": [
+		data: { requestId: string; response: string; processingTime: number },
+	];
+	"event:failed": [
+		data: { requestId: string; error: string; processingTime: number },
+	];
+	"stats:updated": [stats: EventWatcherStats];
+}
+
+export interface EventWatcherStats {
+	totalSubscriptions: number;
+	activeSubscriptions: number;
+	totalEventsDetected: number;
+	totalEventsProcessed: number;
+	totalEventsSuccessful: number;
+	totalEventsFailed: number;
+	successRate: number;
+	averageProcessingTime: number;
+	uptime: number;
+}
+
 export class EventWatcher extends EventEmitter<EventWatcherEvents> {
-	private static readonly DEFAULT_CRON_EXPRESSION = "*/10 * * * * *";
-	private static readonly DEFAULT_RESPONSE_METHOD = "agent_response";
-
 	private authManager: AuthManager;
-	private blockPoller: BlockPoller;
+	private eventListener: EventListener;
 	private eventProcessor: EventProcessor;
 	private isInitialized = false;
 	private startTime = Date.now();
-
-	// Subscription management (simple CRUD)
-	private subscriptions = new Map<string, EventSubscription>();
 
 	// Statistics tracking
 	private stats = {
@@ -44,10 +73,15 @@ export class EventWatcher extends EventEmitter<EventWatcherEvents> {
 		super();
 
 		this.authManager = AuthManager.getInstance();
-		this.blockPoller = new BlockPoller();
+		this.eventListener = new EventListener({
+			networkId: config.networkId,
+			nodeUrl: config.nodeUrl,
+			gasLimit: config.gasLimit,
+		});
+
 		this.eventProcessor = new EventProcessor();
 
-		this.setupComponentHandlers();
+		this.setupEventHandlers();
 	}
 
 	/**
@@ -78,8 +112,8 @@ export class EventWatcher extends EventEmitter<EventWatcherEvents> {
 				throw new Error("Failed to get NEAR account from AuthManager");
 			}
 
-			// Initialize components with account
-			this.blockPoller.setAccount(account);
+			// Initialize components
+			await this.eventListener.initialize();
 			this.eventProcessor.setAccount(account);
 
 			this.isInitialized = true;
@@ -96,6 +130,7 @@ export class EventWatcher extends EventEmitter<EventWatcherEvents> {
 	 * Start watching for a specific event
 	 */
 	public async watchEvent(request: WatchEventRequest): Promise<string> {
+		// Initialize if not already done
 		await this.initialize();
 
 		const {
@@ -106,7 +141,8 @@ export class EventWatcher extends EventEmitter<EventWatcherEvents> {
 			session,
 		} = request;
 
-		if (this.hasSubscription(contractId, eventName)) {
+		// Check if already watching this event
+		if (subscriptionManager.hasSubscription(contractId, eventName)) {
 			throw new Error(
 				`Already watching event '${eventName}' on contract '${contractId}'`,
 			);
@@ -121,20 +157,18 @@ export class EventWatcher extends EventEmitter<EventWatcherEvents> {
 			const subscriptionConfig: SubscriptionConfig = {
 				contractId,
 				eventName,
-				responseMethodName:
-					responseMethodName || EventWatcher.DEFAULT_RESPONSE_METHOD,
-				cronExpression: cronExpression || EventWatcher.DEFAULT_CRON_EXPRESSION,
+				responseMethodName,
+				cronExpression: cronExpression || "*/10 * * * * *",
 				session,
 			};
 
-			const subscription = this.createSubscription(subscriptionConfig);
+			const subscription = subscriptionManager.subscribe(subscriptionConfig);
 
-			// Initialize BlockPoller state for this subscription
-			this.blockPoller.initializeSubscription(subscription.id);
+			// Start listening with EventListener
+			const cronJob = this.eventListener.startListening(subscription);
 
-			// Start cron job for polling
-			const cronJob = this.startPolling(subscription);
-			subscription.cronJob = cronJob;
+			// Update subscription with cron job reference
+			subscriptionManager.updateCronJob(contractId, eventName, cronJob);
 
 			this.emit("watcher:started", subscription.id);
 			this.emitStatsUpdate();
@@ -149,8 +183,8 @@ export class EventWatcher extends EventEmitter<EventWatcherEvents> {
 				error instanceof Error ? error.message : "Unknown error";
 			console.error("❌ Failed to start watching event:", error);
 
-			// Clean up partial subscription
-			this.removeSubscription(contractId, eventName);
+			// Clean up partial subscription if it was created
+			subscriptionManager.unsubscribe(contractId, eventName);
 
 			throw new Error(`Failed to watch event: ${errorMessage}`);
 		}
@@ -163,7 +197,10 @@ export class EventWatcher extends EventEmitter<EventWatcherEvents> {
 		contractId: string,
 		eventName: string,
 	): Promise<boolean> {
-		const subscription = this.getSubscription(contractId, eventName);
+		const subscription = subscriptionManager.getSubscription(
+			contractId,
+			eventName,
+		);
 
 		if (!subscription) {
 			console.warn(
@@ -177,17 +214,11 @@ export class EventWatcher extends EventEmitter<EventWatcherEvents> {
 				`🛑 Stopping watch for event '${eventName}' on contract '${contractId}'`,
 			);
 
-			// Stop cron job
-			if (subscription.cronJob) {
-				subscription.cronJob.stop();
-				subscription.cronJob.destroy();
-			}
-
-			// Clean up BlockPoller state
-			this.blockPoller.removeSubscription(subscription.id);
+			// Stop listening
+			this.eventListener.stopListening(subscription.id);
 
 			// Remove subscription
-			const success = this.removeSubscription(contractId, eventName);
+			const success = subscriptionManager.unsubscribe(contractId, eventName);
 
 			if (success) {
 				this.emit("watcher:stopped", subscription.id);
@@ -211,7 +242,8 @@ export class EventWatcher extends EventEmitter<EventWatcherEvents> {
 	public async stopAllWatching(): Promise<void> {
 		console.log("🛑 Stopping all event watching...");
 
-		const activeSubscriptions = this.getActiveSubscriptions();
+		const activeSubscriptions = subscriptionManager.getActiveSubscriptions();
+
 		for (const subscription of activeSubscriptions) {
 			try {
 				await this.stopWatching(
@@ -229,239 +261,13 @@ export class EventWatcher extends EventEmitter<EventWatcherEvents> {
 		console.log("✅ All event watching stopped");
 	}
 
-	// =============================================================================
-	// SUBSCRIPTION MANAGEMENT (Simple CRUD)
-	// =============================================================================
-
-	private createSubscription(config: SubscriptionConfig): EventSubscription {
-		const subscriptionId = this.generateSubscriptionId(
-			config.contractId,
-			config.eventName,
-		);
-
-		if (this.subscriptions.has(subscriptionId)) {
-			throw new Error(
-				`Already subscribed to event '${config.eventName}' on contract '${config.contractId}'`,
-			);
-		}
-
-		const subscription: EventSubscription = {
-			id: subscriptionId,
-			contractId: config.contractId,
-			eventName: config.eventName,
-			responseMethodName: config.responseMethodName,
-			cronExpression: config.cronExpression,
-			session: config.session,
-			isActive: true,
-			createdAt: Date.now(),
-		};
-
-		this.subscriptions.set(subscriptionId, subscription);
-		console.log(
-			`📝 Created subscription for event '${config.eventName}' on contract '${config.contractId}'`,
-		);
-
-		return subscription;
-	}
-
-	private removeSubscription(contractId: string, eventName: string): boolean {
-		const subscriptionId = this.generateSubscriptionId(contractId, eventName);
-		const subscription = this.subscriptions.get(subscriptionId);
-
-		if (!subscription) {
-			return false;
-		}
-
-		// Stop cron job if exists
-		if (subscription.cronJob) {
-			subscription.cronJob.stop();
-			subscription.cronJob.destroy();
-		}
-
-		this.subscriptions.delete(subscriptionId);
-		console.log(
-			`🗑️ Removed subscription for event '${eventName}' on contract '${contractId}'`,
-		);
-
-		return true;
-	}
-
-	private hasSubscription(contractId: string, eventName: string): boolean {
-		const subscriptionId = this.generateSubscriptionId(contractId, eventName);
-		return this.subscriptions.has(subscriptionId);
-	}
-
-	private getSubscription(
-		contractId: string,
-		eventName: string,
-	): EventSubscription | undefined {
-		const subscriptionId = this.generateSubscriptionId(contractId, eventName);
-		return this.subscriptions.get(subscriptionId);
-	}
-
-	private getActiveSubscriptions(): EventSubscription[] {
-		return Array.from(this.subscriptions.values()).filter(
-			(sub) => sub.isActive,
-		);
-	}
-
-	private generateSubscriptionId(
-		contractId: string,
-		eventName: string,
-	): string {
-		return `${contractId}:${eventName}`;
-	}
-
-	private markEventReceived(contractId: string, eventName: string): void {
-		const subscription = this.getSubscription(contractId, eventName);
-		if (subscription) {
-			subscription.lastEventAt = Date.now();
-		}
-	}
-
-	// =============================================================================
-	// POLLING COORDINATION
-	// =============================================================================
-
-	private startPolling(subscription: EventSubscription): cron.ScheduledTask {
-		console.log(
-			`⏰ Starting cron job for '${subscription.eventName}' with expression: ${subscription.cronExpression}`,
-		);
-
-		const cronJob = cron.schedule(subscription.cronExpression, async () => {
-			// Skip if BlockPoller is already processing this subscription
-			if (this.blockPoller.isProcessing(subscription.id)) {
-				console.log(
-					`⏳ Subscription ${subscription.id} already processing, skipping...`,
-				);
-				return;
-			}
-
-			try {
-				await this.blockPoller.pollForEvents(subscription);
-			} catch (error) {
-				console.error(
-					`❌ Error during polling for subscription ${subscription.id}:`,
-					error,
-				);
-				this.emit("watcher:error", { subscriptionId: subscription.id, error });
-			}
-		});
-
-		cronJob.start();
-		return cronJob;
-	}
-
-	// =============================================================================
-	// COMPONENT EVENT HANDLERS
-	// =============================================================================
-
-	private setupComponentHandlers(): void {
-		// Handle events found by BlockPoller
-		this.blockPoller.on("event:found", async ({ event, subscription }) => {
-			console.log(
-				`🔔 Event detected: ${event.eventType} from ${subscription.contractId}`,
-			);
-
-			// Update statistics
-			this.stats.totalEventsDetected++;
-			this.markEventReceived(subscription.contractId, subscription.eventName);
-
-			// Emit event detected
-			this.emit("event:detected", { event, subscription });
-
-			// Process the event
-			await this.processDetectedEvent(event, subscription);
-			this.emitStatsUpdate();
-		});
-
-		// Handle BlockPoller errors
-		this.blockPoller.on("block:error", ({ subscriptionId, error }) => {
-			console.error(
-				`❌ BlockPoller error for subscription ${subscriptionId}:`,
-				error,
-			);
-			this.emit("watcher:error", { subscriptionId, error });
-		});
-
-		// Handle EventProcessor results
-		this.eventProcessor.on("event:processed", (result) => {
-			console.log(
-				`✅ Event ${result.requestId} processed successfully in ${result.processingTime}ms`,
-			);
-
-			this.updateProcessingStats(true, result.processingTime);
-			this.emit("event:processed", {
-				requestId: result.requestId,
-				response: result.response || "No Response",
-				processingTime: result.processingTime,
-			});
-		});
-
-		this.eventProcessor.on("event:processing-error", (result) => {
-			console.error(
-				`❌ Event ${result.requestId} processing failed: ${result.error}`,
-			);
-
-			this.updateProcessingStats(false, result.processingTime);
-			this.emit("event:failed", {
-				requestId: result.requestId,
-				error: result.error || "No error",
-				processingTime: result.processingTime,
-			});
-		});
-	}
-
-	private async processDetectedEvent(
-		event: AgentEvent,
-		subscription: EventSubscription,
-	): Promise<void> {
-		const account = this.authManager.getAccount();
-		if (!account) {
-			throw new Error("NEAR account not available");
-		}
-
-		try {
-			await this.eventProcessor.processEvent({
-				subscription,
-				event,
-				account,
-			});
-		} catch (error) {
-			console.error("❌ Unexpected error processing event:", error);
-			this.stats.totalEventsFailed++;
-			this.emit("event:failed", {
-				requestId: event.requestId,
-				error: error instanceof Error ? error.message : "Unknown error",
-				processingTime: 0,
-			});
-		}
-	}
-
-	private updateProcessingStats(
-		success: boolean,
-		processingTime: number,
-	): void {
-		this.stats.totalEventsProcessed++;
-		this.stats.totalProcessingTime += processingTime;
-
-		if (success) {
-			this.stats.totalEventsSuccessful++;
-		} else {
-			this.stats.totalEventsFailed++;
-		}
-	}
-
-	private emitStatsUpdate(): void {
-		this.emit("stats:updated", this.getStats());
-	}
-
-	// =============================================================================
-	// PUBLIC API METHODS
-	// =============================================================================
-
+	/**
+	 * Get current watching status
+	 */
 	public getWatchingStatus() {
-		const subscriptions = this.getActiveSubscriptions();
+		const subscriptions = subscriptionManager.getActiveSubscriptions();
+		const listenerStats = this.eventListener.getStats();
+		const processorStats = this.eventProcessor.getStats();
 
 		return {
 			isInitialized: this.isInitialized,
@@ -476,18 +282,20 @@ export class EventWatcher extends EventEmitter<EventWatcherEvents> {
 				createdAt: sub.createdAt,
 				lastEventAt: sub.lastEventAt,
 			})),
-			authManager: this.authManager.getStatus(),
-			blockPoller: this.blockPoller.getStats(),
-			eventProcessor: this.eventProcessor.getStats(),
+			listener: listenerStats,
+			processor: processorStats,
 		};
 	}
 
+	/**
+	 * Get comprehensive statistics
+	 */
 	public getStats(): EventWatcherStats {
-		const subscriptions = this.getActiveSubscriptions();
+		const subscriptionStats = subscriptionManager.getStats();
 
 		return {
-			totalSubscriptions: subscriptions.length,
-			activeSubscriptions: subscriptions.filter((sub) => sub.isActive).length,
+			totalSubscriptions: subscriptionStats.total,
+			activeSubscriptions: subscriptionStats.active,
 			totalEventsDetected: this.stats.totalEventsDetected,
 			totalEventsProcessed: this.stats.totalEventsProcessed,
 			totalEventsSuccessful: this.stats.totalEventsSuccessful,
@@ -506,58 +314,162 @@ export class EventWatcher extends EventEmitter<EventWatcherEvents> {
 		};
 	}
 
+	/**
+	 * Pause watching for a specific event
+	 */
 	public pauseWatching(contractId: string, eventName: string): boolean {
-		const subscription = this.getSubscription(contractId, eventName);
-		if (!subscription) {
-			return false;
-		}
-
-		subscription.isActive = false;
-
-		// Stop the cron job but don't destroy the subscription
-		if (subscription.cronJob) {
-			subscription.cronJob.stop();
-		}
-
-		console.log(
-			`⏸️ Paused subscription for event '${eventName}' on contract '${contractId}'`,
-		);
-		return true;
+		return subscriptionManager.pauseSubscription(contractId, eventName);
 	}
 
+	/**
+	 * Resume watching for a specific event
+	 */
 	public resumeWatching(contractId: string, eventName: string): boolean {
-		const subscription = this.getSubscription(contractId, eventName);
+		const subscription = subscriptionManager.getSubscription(
+			contractId,
+			eventName,
+		);
 		if (!subscription) {
 			return false;
 		}
 
-		subscription.isActive = true;
+		const success = subscriptionManager.resumeSubscription(
+			contractId,
+			eventName,
+		);
 
-		// Restart the cron job if it exists
-		if (subscription.cronJob) {
+		if (success && subscription.cronJob) {
+			// Restart the cron job
 			subscription.cronJob.start();
 		}
 
-		console.log(
-			`▶️ Resumed subscription for event '${eventName}' on contract '${contractId}'`,
-		);
-		return true;
+		return success;
 	}
 
+	/**
+	 * Check if watching a specific event
+	 */
 	public isWatching(contractId: string, eventName: string): boolean {
-		return this.hasSubscription(contractId, eventName);
+		return subscriptionManager.hasSubscription(contractId, eventName);
 	}
 
+	/**
+	 * Get list of all watched events
+	 */
 	public getWatchedEvents(): Array<{
 		contractId: string;
 		eventName: string;
 		subscriptionId: string;
 	}> {
-		return this.getActiveSubscriptions().map((sub) => ({
+		return subscriptionManager.getActiveSubscriptions().map((sub) => ({
 			contractId: sub.contractId,
 			eventName: sub.eventName,
 			subscriptionId: sub.id,
 		}));
+	}
+
+	/**
+	 * Setup event handlers to connect EventListener and EventProcessor
+	 */
+	private setupEventHandlers(): void {
+		// Handle events found by EventListener
+		this.eventListener.on("event:found", async ({ event, subscription }) => {
+			console.log(
+				`🔔 Event detected: ${event.eventType} from ${subscription.contractId}`,
+			);
+
+			this.stats.totalEventsDetected++;
+			subscriptionManager.markEventReceived(
+				subscription.contractId,
+				subscription.eventName,
+			);
+
+			this.emit("event:detected", { event, subscription });
+
+			// Process the event
+			const account = this.authManager.getAccount();
+			if (account) {
+				try {
+					const result = await this.eventProcessor.processEvent({
+						subscription,
+						event,
+						account,
+					});
+
+					this.updateProcessingStats(result.success, result.processingTime);
+
+					if (result.success) {
+						this.emit("event:processed", {
+							requestId: result.requestId,
+							response: result.response || "No Response",
+							processingTime: result.processingTime,
+						});
+					} else {
+						this.emit("event:failed", {
+							requestId: result.requestId,
+							error: result.error || "No error",
+							processingTime: result.processingTime,
+						});
+					}
+				} catch (error) {
+					console.error("❌ Unexpected error processing event:", error);
+					this.stats.totalEventsFailed++;
+					this.emit("event:failed", {
+						requestId: event.requestId,
+						error: error instanceof Error ? error.message : "Unknown error",
+						processingTime: 0,
+					});
+				}
+			}
+
+			this.emitStatsUpdate();
+		});
+
+		// Handle EventListener errors
+		this.eventListener.on("event:error", ({ subscription, error }) => {
+			console.error(
+				`❌ EventListener error for subscription ${subscription.id}:`,
+				error,
+			);
+			this.emit("watcher:error", { subscriptionId: subscription.id, error });
+		});
+
+		// Handle EventProcessor events (optional additional logging)
+		this.eventProcessor.on("event:processed", (result) => {
+			console.log(
+				`✅ Event ${result.requestId} processed successfully in ${result.processingTime}ms`,
+			);
+		});
+
+		this.eventProcessor.on("event:processing-error", (result) => {
+			console.error(
+				`❌ Event ${result.requestId} processing failed: ${result.error}`,
+			);
+		});
+	}
+
+	/**
+	 * Update processing statistics
+	 */
+	private updateProcessingStats(
+		success: boolean,
+		processingTime: number,
+	): void {
+		this.stats.totalEventsProcessed++;
+		this.stats.totalProcessingTime += processingTime;
+
+		if (success) {
+			this.stats.totalEventsSuccessful++;
+		} else {
+			this.stats.totalEventsFailed++;
+		}
+	}
+
+	/**
+	 * Emit stats update event
+	 */
+	private emitStatsUpdate(): void {
+		this.emit("stats:updated", this.getStats());
 	}
 
 	/**
@@ -571,11 +483,11 @@ export class EventWatcher extends EventEmitter<EventWatcherEvents> {
 			await this.stopAllWatching();
 
 			// Cleanup components
-			this.blockPoller.cleanup();
+			this.eventListener.cleanup();
 			this.eventProcessor.cleanup();
+			subscriptionManager.cleanup();
 
 			// Reset state
-			this.subscriptions.clear();
 			this.isInitialized = false;
 			this.removeAllListeners();
 
