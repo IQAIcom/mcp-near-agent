@@ -1,5 +1,12 @@
 # @iqai/mcp-near-agent
 
+## 0.0.5
+
+### Patch Changes
+
+- c007d20: Bypasses account status check
+- 310bc2b: Enables debug console on debug true instead of DEBUG string
+
 ## 0.0.4
 
 ### Patch Changes
