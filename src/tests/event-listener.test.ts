@@ -1,5 +1,4 @@
 import * as cron from "node-cron";
-import { EventEmitter } from "node:events";
 import { AuthManager } from "../services/auth-manager";
 import { EventListener } from "../services/event-listener";
 

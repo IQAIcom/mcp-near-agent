@@ -37,7 +37,6 @@ describe("AuthManager", () => {
 
 	beforeEach(() => {
 		jest.clearAllMocks();
-		// biome-ignore lint/suspicious/noExplicitAny: private property access for testing
 		(AuthManager as any).instance = null;
 		authManager = AuthManager.getInstance();
 		consoleLogSpy = jest.spyOn(console, "log").mockImplementation(() => {});

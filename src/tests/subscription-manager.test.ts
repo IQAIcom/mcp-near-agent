@@ -1,8 +1,8 @@
 import type { FastMCPSession } from "fastmcp";
 import type * as cron from "node-cron";
 import {
+    SubscriptionConfig,
 	SubscriptionManager,
-	SubscriptionConfig,
 } from "../services/subscription-manager";
 
 const mockSession: FastMCPSession = {
