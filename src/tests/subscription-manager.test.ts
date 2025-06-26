@@ -1,7 +1,7 @@
 import type { FastMCPSession } from "fastmcp";
 import type * as cron from "node-cron";
 import {
-    SubscriptionConfig,
+	SubscriptionConfig,
 	SubscriptionManager,
 } from "../services/subscription-manager";
 

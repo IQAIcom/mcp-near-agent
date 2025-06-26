@@ -1,7 +1,7 @@
-import { AuthManager } from "../services/auth-manager.js";
 import { Account, KeyPairSigner } from "near-api-js";
 import { JsonRpcProvider } from "near-api-js/lib/providers/json-rpc-provider.js";
 import { env } from "../env.js";
+import { AuthManager } from "../services/auth-manager.js";
 
 // Mock near-api-js classes
 jest.mock("near-api-js", () => ({
