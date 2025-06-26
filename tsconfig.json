@@ -1,13 +1,11 @@
 {
-	"compilerOptions": {
+    "compilerOptions": {
         "outDir": "./dist",
         "rootDir": "./src",
-        "module": "CommonJS",
-        "lib": ["ES2022"],
+        "module": "NodeNext",
+        "moduleResolution": "NodeNext",
         "target": "ES2022",
-        "moduleResolution": "node",
         "declaration": true,
-        "declarationMap": true,
         "sourceMap": true,
         "strict": true,
         "strictPropertyInitialization": false,
@@ -15,16 +13,13 @@
         "skipLibCheck": true,
         "forceConsistentCasingInFileNames": true,
         "resolveJsonModule": true,
-        // "baseUrl": ".",
-        "noImplicitAny": true,
-        "noImplicitReturns": true,
-        "noFallthroughCasesInSwitch": true,
-        "allowSyntheticDefaultImports": true,
-        // "paths": {
-        // 	"*": ["node_modules/*", "src/types/*"]
-        // },
+        "lib": ["ES2022"],
+        "baseUrl": ".",
+        "paths": {
+            "*": ["node_modules/*", "src/types/*"]
+        },
         "types": ["node", "jest"]
     },
-	"include": ["src/**/*.ts"],
-	"exclude": ["node_modules", "dist"]
+    "include": ["src/**/*.ts"],
+    "exclude": ["node_modules", "dist", "**/*.spec.ts", "**/*.test.ts"]
 }
