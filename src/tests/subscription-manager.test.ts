@@ -1,3 +1,4 @@
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { FastMCPSession } from "fastmcp";
 import type * as cron from "node-cron";
 import {
@@ -6,15 +7,15 @@ import {
 } from "../services/subscription-manager";
 
 const mockSession: FastMCPSession = {
-	connect: jest.fn(),
-	disconnect: jest.fn(),
-	isConnected: jest.fn(() => true),
+	connect: vi.fn(),
+	disconnect: vi.fn(),
+	isConnected: vi.fn(() => true),
 } as unknown as FastMCPSession;
 
 const mockCronScheduledTask = {
-	stop: jest.fn(),
-	destroy: jest.fn(),
-	start: jest.fn(),
+	stop: vi.fn(),
+	destroy: vi.fn(),
+	start: vi.fn(),
 } as unknown as cron.ScheduledTask;
 
 describe("SubscriptionManager", () => {
@@ -28,7 +29,7 @@ describe("SubscriptionManager", () => {
 
 	beforeEach(() => {
 		resetManager();
-		jest.clearAllMocks();
+		vi.clearAllMocks();
 	});
 
 	it("should return a singleton instance", () => {
@@ -323,8 +324,8 @@ describe("SubscriptionManager", () => {
 			)?.lastEventAt;
 			expect(initialLastEventAt).toBeUndefined();
 
-			jest.useFakeTimers();
-			jest.setSystemTime(new Date(2025, 0, 1, 12, 0, 0));
+			vi.useFakeTimers();
+			vi.setSystemTime(new Date(2025, 0, 1, 12, 0, 0));
 
 			manager.markEventReceived("contract9", "EventI");
 			const updatedLastEventAt = manager.getSubscription(
@@ -334,7 +335,7 @@ describe("SubscriptionManager", () => {
 
 			expect(updatedLastEventAt).toBe(new Date(2025, 0, 1, 12, 0, 0).getTime());
 
-			jest.useRealTimers();
+			vi.useRealTimers();
 		});
 
 		it("should do nothing if subscription does not exist", () => {
@@ -449,8 +450,8 @@ describe("SubscriptionManager", () => {
 		});
 
 		it("should return correct statistics with mixed active and paused subscriptions", () => {
-			jest.useFakeTimers();
-			jest.setSystemTime(new Date(2020, 0, 1, 0, 0, 0));
+			vi.useFakeTimers();
+			vi.setSystemTime(new Date(2020, 0, 1, 0, 0, 0));
 
 			manager.subscribe({
 				contractId: "c1",
@@ -459,7 +460,7 @@ describe("SubscriptionManager", () => {
 				cronExpression: "*/10 * * * * *",
 				session: mockSession,
 			});
-			jest.setSystemTime(new Date(2020, 0, 2, 0, 0, 0));
+			vi.setSystemTime(new Date(2020, 0, 2, 0, 0, 0));
 			manager.subscribe({
 				contractId: "c1",
 				eventName: "e2",
@@ -467,7 +468,7 @@ describe("SubscriptionManager", () => {
 				cronExpression: "*/10 * * * * *",
 				session: mockSession,
 			});
-			jest.setSystemTime(new Date(2020, 0, 3, 0, 0, 0));
+			vi.setSystemTime(new Date(2020, 0, 3, 0, 0, 0));
 			manager.subscribe({
 				contractId: "c2",
 				eventName: "e3",
@@ -486,7 +487,7 @@ describe("SubscriptionManager", () => {
 			expect(stats.oldestSubscription).toBe(
 				new Date(2020, 0, 1, 0, 0, 0).getTime(),
 			);
-			jest.useRealTimers();
+			vi.useRealTimers();
 		});
 	});
 
@@ -504,8 +505,8 @@ describe("SubscriptionManager", () => {
 				...mockCronScheduledTask,
 				id: "job1",
 			} as cron.ScheduledTask;
-			const stopSpy1 = jest.spyOn(sub1.cronJob, "stop");
-			const destroySpy1 = jest.spyOn(sub1.cronJob, "destroy");
+			const stopSpy1 = vi.spyOn(sub1.cronJob, "stop");
+			const destroySpy1 = vi.spyOn(sub1.cronJob, "destroy");
 
 			const config2: SubscriptionConfig = {
 				contractId: "contractX",
@@ -519,18 +520,18 @@ describe("SubscriptionManager", () => {
 				...mockCronScheduledTask,
 				id: "job2",
 			} as cron.ScheduledTask;
-			const stopSpy2 = jest.spyOn(sub2.cronJob, "stop");
-			const destroySpy2 = jest.spyOn(sub2.cronJob, "destroy");
+			const stopSpy2 = vi.spyOn(sub2.cronJob, "stop");
+			const destroySpy2 = vi.spyOn(sub2.cronJob, "destroy");
 
 			expect(manager.getSubscriptionIds().length).toBe(2);
 
 			manager.cleanup();
 
 			expect(manager.getSubscriptionIds().length).toBe(0);
-			expect(stopSpy1).toHaveBeenCalledTimes(2);
-			expect(destroySpy1).toHaveBeenCalledTimes(2);
-			expect(stopSpy2).toHaveBeenCalledTimes(2);
-			expect(destroySpy2).toHaveBeenCalledTimes(2);
+			expect(stopSpy1).toHaveBeenCalledTimes(1);
+			expect(destroySpy1).toHaveBeenCalledTimes(1);
+			expect(stopSpy2).toHaveBeenCalledTimes(1);
+			expect(destroySpy2).toHaveBeenCalledTimes(1);
 		});
 
 		it("should handle cleanup gracefully when no subscriptions exist", () => {

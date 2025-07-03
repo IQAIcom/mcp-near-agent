@@ -1,22 +1,31 @@
+import {
+	describe,
+	it,
+	expect,
+	vi,
+	beforeEach,
+	afterEach,
+	Mocked,
+} from "vitest";
 import * as cron from "node-cron";
 import { AuthManager } from "../services/auth-manager";
 import { EventListener } from "../services/event-listener";
 
-jest.mock("../services/auth-manager", () => {
+vi.mock("../services/auth-manager", () => {
 	const mockAuthManagerInstance = {
-		isReady: jest.fn(),
-		initialize: jest.fn(),
-		getAccount: jest.fn(),
-		getStatus: jest.fn(),
+		isReady: vi.fn(),
+		initialize: vi.fn(),
+		getAccount: vi.fn(),
+		getStatus: vi.fn(),
 	};
 	return {
 		AuthManager: {
-			getInstance: jest.fn(() => mockAuthManagerInstance),
+			getInstance: vi.fn(() => mockAuthManagerInstance),
 		},
 	};
 });
 
-jest.mock("../env.js", () => ({
+vi.mock("../env.js", () => ({
 	env: {
 		ACCOUNT_KEY: "mock_account_key",
 		NEAR_NODE_URL: "http://mock-near-node.test",
@@ -25,21 +34,21 @@ jest.mock("../env.js", () => ({
 	},
 }));
 
-let mockAuthManagerInstance: jest.Mocked<AuthManager>;
+let mockAuthManagerInstance: Mocked<AuthManager>;
 
-jest.mock("node-cron", () => ({
-	schedule: jest.fn(() => ({
-		start: jest.fn(),
-		stop: jest.fn(),
-		destroy: jest.fn(),
+vi.mock("node-cron", () => ({
+	schedule: vi.fn(() => ({
+		start: vi.fn(),
+		stop: vi.fn(),
+		destroy: vi.fn(),
 	})),
 }));
-const mockCronSchedule = cron.schedule as jest.Mock;
+const mockCronSchedule = vi.mocked(cron.schedule);
 
 const mockProvider = {
-	viewBlock: jest.fn(),
-	viewChunk: jest.fn(),
-	viewTransactionStatus: jest.fn(),
+	viewBlock: vi.fn(),
+	viewChunk: vi.fn(),
+	viewTransactionStatus: vi.fn(),
 };
 
 const mockAccount = {
@@ -53,30 +62,32 @@ describe("EventListener", () => {
 	let eventListener: EventListener;
 
 	beforeEach(() => {
-		jest.clearAllMocks();
+		vi.clearAllMocks();
 
-		mockAuthManagerInstance =
-			AuthManager.getInstance() as jest.Mocked<AuthManager>;
+		mockAuthManagerInstance = AuthManager.getInstance() as Mocked<AuthManager>;
 
 		mockAuthManagerInstance.isReady.mockReturnValue(true);
 		mockAuthManagerInstance.getAccount.mockReturnValue(mockAccount as any);
 
-		mockCronSchedule.mockImplementation(() => ({
-			start: jest.fn(),
-			stop: jest.fn(),
-			destroy: jest.fn(),
-		}));
+		mockCronSchedule.mockImplementation(
+			() =>
+				({
+					start: vi.fn(),
+					stop: vi.fn(),
+					destroy: vi.fn(),
+				}) as any,
+		);
 
-		global.fetch = jest.fn() as jest.Mock;
+		global.fetch = vi.fn();
 
 		eventListener = new EventListener();
-		jest.spyOn(console, "log").mockImplementation(() => {});
-		jest.spyOn(console, "error").mockImplementation(() => {});
-		jest.spyOn(console, "warn").mockImplementation(() => {});
+		vi.spyOn(console, "log").mockImplementation(() => {});
+		vi.spyOn(console, "error").mockImplementation(() => {});
+		vi.spyOn(console, "warn").mockImplementation(() => {});
 	});
 
 	afterEach(() => {
-		jest.restoreAllMocks();
+		vi.restoreAllMocks();
 	});
 
 	describe("constructor", () => {

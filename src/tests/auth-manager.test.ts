@@ -1,27 +1,37 @@
+import {
+	describe,
+	it,
+	expect,
+	vi,
+	beforeEach,
+	afterEach,
+	Mocked,
+} from "vitest";
 import { Account, KeyPairSigner } from "near-api-js";
 import { JsonRpcProvider } from "near-api-js/lib/providers/json-rpc-provider.js";
 import { env } from "../env.js";
 import { AuthManager } from "../services/auth-manager.js";
 
 // Mock near-api-js classes
-jest.mock("near-api-js", () => ({
-	Account: jest.fn().mockImplementation(function (this: any) {
+vi.mock("near-api-js", () => ({
+	Account: vi.fn().mockImplementation(function (this: any) {
 		this.accountId = "mockAccountId";
 		return this;
 	}),
 	KeyPairSigner: {
-		fromSecretKey: jest.fn(),
+		fromSecretKey: vi.fn(),
 	},
 }));
 
-jest.mock("near-api-js/lib/providers/json-rpc-provider.js", () => ({
-	JsonRpcProvider: jest.fn().mockImplementation(function (this: any) {
+// Mock the JSON RPC provider
+vi.mock("near-api-js/lib/providers/json-rpc-provider.js", () => ({
+	JsonRpcProvider: vi.fn().mockImplementation(function (this: any) {
 		return this;
 	}),
 }));
 
 // Mock the env module
-jest.mock("../env.js", () => ({
+vi.mock("../env.js", () => ({
 	env: {
 		NEAR_NETWORK_ID: "testnet",
 		ACCOUNT_ID: "test.near",
@@ -32,16 +42,16 @@ jest.mock("../env.js", () => ({
 
 describe("AuthManager", () => {
 	let authManager: AuthManager;
-	let consoleLogSpy: jest.SpyInstance;
-	let consoleErrorSpy: jest.SpyInstance;
+	let consoleLogSpy: ReturnType<typeof vi.spyOn>;
+	let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
 
 	beforeEach(() => {
-		jest.clearAllMocks();
+		vi.clearAllMocks();
 		(AuthManager as any).instance = null;
 		authManager = AuthManager.getInstance();
-		consoleLogSpy = jest.spyOn(console, "log").mockImplementation(() => {});
-		consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
-		(KeyPairSigner.fromSecretKey as jest.Mock).mockReturnValue({});
+		consoleLogSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+		consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+		vi.mocked(KeyPairSigner.fromSecretKey).mockReturnValue({} as any);
 	});
 
 	afterEach(() => {
@@ -87,7 +97,7 @@ describe("AuthManager", () => {
 
 		it("should return the existing account if already initialized", async () => {
 			await authManager.initialize();
-			jest.clearAllMocks();
+			vi.clearAllMocks();
 			consoleLogSpy.mockClear();
 			const result = await authManager.initialize();
 			expect(Account).not.toHaveBeenCalled();
@@ -102,7 +112,7 @@ describe("AuthManager", () => {
 
 		it("should throw an error if initialization fails (e.g., invalid key)", async () => {
 			const errorMessage = "Invalid secret key format";
-			(KeyPairSigner.fromSecretKey as jest.Mock).mockImplementationOnce(() => {
+			vi.mocked(KeyPairSigner.fromSecretKey).mockImplementationOnce(() => {
 				throw new Error(errorMessage);
 			});
 
@@ -117,7 +127,7 @@ describe("AuthManager", () => {
 		});
 
 		it("should throw an error with 'Unknown error' for non-Error thrown objects", async () => {
-			(KeyPairSigner.fromSecretKey as jest.Mock).mockImplementationOnce(() => {
+			vi.mocked(KeyPairSigner.fromSecretKey).mockImplementationOnce(() => {
 				throw "Something went wrong!";
 			});
 
@@ -150,7 +160,7 @@ describe("AuthManager", () => {
 		});
 
 		it("should return false if initialization failed", async () => {
-			(KeyPairSigner.fromSecretKey as jest.Mock).mockImplementationOnce(() => {
+			vi.mocked(KeyPairSigner.fromSecretKey).mockImplementationOnce(() => {
 				throw new Error("Initialization failed");
 			});
 			await expect(authManager.initialize()).rejects.toThrow();

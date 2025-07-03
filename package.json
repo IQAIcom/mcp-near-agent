@@ -12,7 +12,7 @@
 		"build": "tsc && shx chmod +x dist/index.js",
 		"prepare": "husky",
 		"watch": "tsc --watch",
-		"test": "jest --passWithNoTests",
+		"test": "vitest run",
 		"start": "node dist/index.js",
 		"publish-packages": "pnpm run build && changeset publish",
 		"format": "biome format . --write",
@@ -44,18 +44,14 @@
 	},
 	"homepage": "https://github.com/IQAIcom/mcp-near#readme",
 	"devDependencies": {
-		"@babel/preset-env": "^7.27.2",
-		"@babel/preset-typescript": "^7.27.1",
 		"@biomejs/biome": "*",
 		"@changesets/cli": "^2.29.4",
-		"@types/jest": "^30.0.0",
 		"@types/node": "^24.0.4",
 		"husky": "^9.1.7",
-		"jest": "^30.0.2",
 		"lint-staged": "^16.1.0",
 		"shx": "^0.3.4",
-		"ts-jest": "^29.4.0",
-		"typescript": "^5.8.3"
+		"typescript": "^5.8.3",
+		"vitest": "^3.2.4"
 	},
 	"dependencies": {
 		"@biomejs/biome": "*",
