@@ -1,14 +1,14 @@
-import {
-	describe,
-	it,
-	expect,
-	vi,
-	beforeEach,
-	afterEach,
-	Mocked,
-} from "vitest";
 import { Account, KeyPairSigner } from "near-api-js";
 import { JsonRpcProvider } from "near-api-js/lib/providers/json-rpc-provider.js";
+import {
+	Mocked,
+	afterEach,
+	beforeEach,
+	describe,
+	expect,
+	it,
+	vi,
+} from "vitest";
 import { env } from "../env.js";
 import { AuthManager } from "../services/auth-manager.js";
 
