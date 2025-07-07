@@ -1,5 +1,12 @@
 # @iqai/mcp-near-agent
 
+## 0.0.7
+
+### Patch Changes
+
+- c75d5cf: Adds session information to watch logs
+- 5bc78ef: Update fast mcp
+
 ## 0.0.6
 
 ### Patch Changes
