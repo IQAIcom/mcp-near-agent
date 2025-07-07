@@ -21,16 +21,11 @@ async function main() {
 	server.addTool(stopWatchingTool);
 	server.addTool(listWatchingTool);
 
-	try {
-		await server.start({
-			transportType: "stdio",
-		});
-		console.log("✅ Near Agent MCP Server started successfully over stdio.");
-		console.log("You can now connect to it using an MCP client.");
-	} catch (error) {
-		console.error("❌ Failed to start Near Agent MCP Server:", error);
-		process.exit(1);
-	}
+	await server.start({
+		transportType: "stdio",
+	});
+	console.log("✅ Near Agent MCP Server started successfully over stdio.");
+	console.log("You can now connect to it using an MCP client.");
 }
 
 main().catch((error) => {
