@@ -35,7 +35,7 @@ export const watchEventTool: Tool<
 				params;
 
 			console.log(
-				`🎯 Starting to watch for '${eventName}' events on contract '${contractId}'`,
+				`🎯 Starting to watch for '${eventName}' events on contract '${contractId}' with session ${JSON.stringify(session, null, 4)}`,
 			);
 
 			// Check if already watching this event
