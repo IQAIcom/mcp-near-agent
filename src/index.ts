@@ -9,7 +9,7 @@ if (env.DEBUG) {
 }
 
 async function main() {
-	console.log("Initializing MCP Near Server...");
+	console.log("ℹ️ Initializing MCP Near Server...");
 
 	const server = new FastMCP({
 		name: "Near Agent MCP Server",
