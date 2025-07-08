@@ -27,18 +27,18 @@ The server enables an "AI in the loop" workflow:
 ### Option 1: Using `pnpm dlx` (Recommended)
 Run directly without installation:
 ```bash
-pnpm dlx mcp-near
+pnpm dlx mcp-near-agent
 ```
 
 ### Option 2: Global Installation
 ```bash
-pnpm add -g mcp-near
+pnpm add -g mcp-near-agent
 ```
 
 ### Option 3: From Source
 ```bash
 git clone <repository_url>
-cd mcp-near
+cd mcp-near-agent
 pnpm install
 pnpm run build
 ```
@@ -63,7 +63,7 @@ import { MCPClient } from "your-mcp-client";
 
 const client = new MCPClient({
   serverCommand: "pnpm",
-  serverArgs: ["dlx", "mcp-near"],
+  serverArgs: ["dlx", "mcp-near-agent"],
   serverEnv: {
     ACCOUNT_ID: "your-account.testnet",
     ACCOUNT_KEY: "ed25519:your_private_key_here",
