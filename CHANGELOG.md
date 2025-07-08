@@ -1,5 +1,11 @@
 # @iqai/mcp-near-agent
 
+## 0.0.8
+
+### Patch Changes
+
+- 2d211e0: Update package json with correct main file
+
 ## 0.0.7
 
 ### Patch Changes
