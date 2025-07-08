@@ -1,5 +1,11 @@
 # @iqai/mcp-near-agent
 
+## 0.0.11
+
+### Patch Changes
+
+- 97d2deb: Updates package json and readme
+
 ## 0.0.10
 
 ### Patch Changes
