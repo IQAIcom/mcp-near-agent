@@ -8,15 +8,9 @@ importers:
 
   .:
     dependencies:
-      '@biomejs/biome':
-        specifier: '*'
-        version: 1.9.4
       '@near-js/client':
         specifier: ^2.0.2
-        version: 2.0.2(nardbu7zbocnc5iz7mgtzmnxre)
-      '@types/node-cron':
-        specifier: ^3.0.11
-        version: 3.0.11
+        version: 2.0.2(01038c00b98844e91801c093cb345462)
       dedent:
         specifier: ^1.6.0
         version: 1.6.0
@@ -37,7 +31,7 @@ importers:
         version: 1.0.0
       near-api-js:
         specifier: 6.0.2
-        version: 6.0.2(wqoifzzm4q4sgt22m63rukiexu)
+        version: 6.0.2(7a1c48c26796da9bf69f5b37c9133970)
       node-cron:
         specifier: ^4.1.0
         version: 4.1.0
@@ -51,12 +45,18 @@ importers:
         specifier: ^3.25.50
         version: 3.25.50
     devDependencies:
+      '@biomejs/biome':
+        specifier: '*'
+        version: 1.9.4
       '@changesets/cli':
         specifier: ^2.29.4
         version: 2.29.4
       '@types/node':
         specifier: ^24.0.4
         version: 24.0.4
+      '@types/node-cron':
+        specifier: ^3.0.11
+        version: 3.0.11
       husky:
         specifier: ^9.1.7
         version: 9.1.7
@@ -1588,10 +1588,6 @@ packages:
     resolution: {integrity: sha512-//nshmD55c46FuFw26xV/xFAaB5HF9Xdap7HJBBnrKdAd6/GxDBaNA1870O79+9ueg61cZLSVc+OaFlfmObYVQ==}
     engines: {node: '>= 14.16'}
 
-  peek-readable@7.0.0:
-    resolution: {integrity: sha512-nri2TO5JE3/mRryik9LlHFT53cgHfRK0Lt0BAZQXku/AW3E6XLt2GaY8siWi7dvW/m1z0ecn+J+bpDa9ZN3IsQ==}
-    engines: {node: '>=18'}
-
   picocolors@1.1.1:
     resolution: {integrity: sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA==}
 
@@ -1805,12 +1801,12 @@ packages:
     resolution: {integrity: sha512-RwNA9Z/7PrK06rYLIzFMlaF+l73iwpzsqRIFgbMLbTcLD6cOao82TaWefPXQvB2fOC4AjuYSEndS7N/mTCbkdQ==}
     engines: {node: '>= 0.8'}
 
-  std-env@3.9.0:
-    resolution: {integrity: sha512-UGvjygr6F6tpH7o2qyqR6QYpwraIjKSdtzyBdyytFOHmPZY917kwdwLG0RbOjWOnKmnm3PeHjaoLLMie7kPLQw==}
-    
   statuses@2.0.2:
     resolution: {integrity: sha512-DvEy55V3DB7uknRo+4iOGT5fP1slR8wQohVdknigZPMpMstaKJQWhwiYBACJE3Ul2pTnATihhBYnRhZQHGBiRw==}
     engines: {node: '>= 0.8'}
+
+  std-env@3.9.0:
+    resolution: {integrity: sha512-UGvjygr6F6tpH7o2qyqR6QYpwraIjKSdtzyBdyytFOHmPZY917kwdwLG0RbOjWOnKmnm3PeHjaoLLMie7kPLQw==}
 
   strict-event-emitter-types@2.0.0:
     resolution: {integrity: sha512-Nk/brWYpD85WlOgzw5h173aci0Teyv8YdIAEtV+N88nDB0dLlazZyJMIsN6eo1/AR61l+p6CJTG1JIyFaoNEEA==}
@@ -1844,7 +1840,6 @@ packages:
 
   strtok3@10.3.1:
     resolution: {integrity: sha512-3JWEZM6mfix/GCJBBUrkA8p2Id2pBkyTkVCJKto55w080QBKZ+8R171fGrbiSp+yMO/u6F8/yUh7K4V9K+YCnw==}
-
     engines: {node: '>=18'}
 
   supports-preserve-symlinks-flag@1.0.0:
@@ -2055,10 +2050,6 @@ packages:
     resolution: {integrity: sha512-hUrmaWBdVDcxvYqnyh09zunKzROWjbZTiNy8dBEjkS7ehEDQibXJ7XvlmtbwuTclUiIyN+CyXQD4Vmko8fNm8w==}
     engines: {node: '>=8'}
     hasBin: true
-
-  wrap-ansi@7.0.0:
-    resolution: {integrity: sha512-YVGIj2kamLSTxw6NsZjoBxfSwsn0ycdesmc4p+Q21c5zPuZ1pl+NfxVdxPtdHvmNVOQ6XSYG4AUtyt/Fi7D16Q==}
-    engines: {node: '>=10'}
 
   wrap-ansi@9.0.0:
     resolution: {integrity: sha512-G8ura3S+3Z2G+mkgNRq8dqaFZAuxfsxpBB8OCTGRTCtp+l/v9nbFNmCUP1BZMts3G1142MsZfn6eeUKrr4PD1Q==}
@@ -2473,7 +2464,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@near-js/accounts@2.0.2(r3ydvubib3zwjpvdm7i24sajt4)':
+  '@near-js/accounts@2.0.2(c3b9ecf7f4a07e01c802176fa86edd8f)':
     dependencies:
       '@near-js/crypto': 2.0.2(@near-js/types@2.0.2)(@near-js/utils@2.0.2(@near-js/types@2.0.2))
       '@near-js/providers': 2.0.2(@near-js/crypto@2.0.2(@near-js/types@2.0.2)(@near-js/utils@2.0.2(@near-js/types@2.0.2)))(@near-js/transactions@2.0.2(@near-js/crypto@2.0.2(@near-js/types@2.0.2)(@near-js/utils@2.0.2(@near-js/types@2.0.2)))(@near-js/types@2.0.2)(@near-js/utils@2.0.2(@near-js/types@2.0.2)))(@near-js/types@2.0.2)(@near-js/utils@2.0.2(@near-js/types@2.0.2))
@@ -2489,9 +2480,9 @@ snapshots:
       lru_map: 0.4.1
       near-abi: 0.2.0
 
-  '@near-js/client@2.0.2(nardbu7zbocnc5iz7mgtzmnxre)':
+  '@near-js/client@2.0.2(01038c00b98844e91801c093cb345462)':
     dependencies:
-      '@near-js/accounts': 2.0.2(r3ydvubib3zwjpvdm7i24sajt4)
+      '@near-js/accounts': 2.0.2(c3b9ecf7f4a07e01c802176fa86edd8f)
       '@near-js/crypto': 2.0.2(@near-js/types@2.0.2)(@near-js/utils@2.0.2(@near-js/types@2.0.2))
       '@near-js/keystores': 2.0.2(@near-js/crypto@2.0.2(@near-js/types@2.0.2)(@near-js/utils@2.0.2(@near-js/types@2.0.2)))(@near-js/types@2.0.2)
       '@near-js/providers': 2.0.2(@near-js/crypto@2.0.2(@near-js/types@2.0.2)(@near-js/utils@2.0.2(@near-js/types@2.0.2)))(@near-js/transactions@2.0.2(@near-js/crypto@2.0.2(@near-js/types@2.0.2)(@near-js/utils@2.0.2(@near-js/types@2.0.2)))(@near-js/types@2.0.2)(@near-js/utils@2.0.2(@near-js/types@2.0.2)))(@near-js/types@2.0.2)(@near-js/utils@2.0.2(@near-js/types@2.0.2))
@@ -3531,9 +3522,9 @@ snapshots:
     dependencies:
       '@types/json-schema': 7.0.15
 
-  near-api-js@6.0.2(wqoifzzm4q4sgt22m63rukiexu):
+  near-api-js@6.0.2(7a1c48c26796da9bf69f5b37c9133970):
     dependencies:
-      '@near-js/accounts': 2.0.2(r3ydvubib3zwjpvdm7i24sajt4)
+      '@near-js/accounts': 2.0.2(c3b9ecf7f4a07e01c802176fa86edd8f)
       '@near-js/crypto': 2.0.2(@near-js/types@2.0.2)(@near-js/utils@2.0.2(@near-js/types@2.0.2))
       '@near-js/keystores': 2.0.2(@near-js/crypto@2.0.2(@near-js/types@2.0.2)(@near-js/utils@2.0.2(@near-js/types@2.0.2)))(@near-js/types@2.0.2)
       '@near-js/keystores-browser': 0.2.1
@@ -3645,8 +3636,6 @@ snapshots:
   pathe@2.0.3: {}
 
   pathval@2.0.1: {}
-
-  peek-readable@7.0.0: {}
 
   picocolors@1.1.1: {}
 
@@ -3891,9 +3880,9 @@ snapshots:
 
   statuses@2.0.1: {}
 
-  std-env@3.9.0: {}
-  
   statuses@2.0.2: {}
+
+  std-env@3.9.0: {}
 
   strict-event-emitter-types@2.0.0: {}
 
@@ -3922,7 +3911,6 @@ snapshots:
       js-tokens: 9.0.1
 
   strtok3@10.3.1:
-  
     dependencies:
       '@tokenizer/token': 0.3.0
 
@@ -4119,12 +4107,6 @@ snapshots:
     dependencies:
       siginfo: 2.0.0
       stackback: 0.0.2
-
-  wrap-ansi@7.0.0:
-    dependencies:
-      ansi-styles: 4.3.0
-      string-width: 4.2.3
-      strip-ansi: 6.0.1
 
   wrap-ansi@9.0.0:
     dependencies:
