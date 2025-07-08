@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { FastMCP } from "fastmcp";
 import { env } from "./env.js";
 import { listWatchingTool } from "./tools/list-watching-tool.js";
