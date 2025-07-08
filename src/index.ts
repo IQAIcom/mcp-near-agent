@@ -1,10 +1,11 @@
 #!/usr/bin/env node
-import { Server } from "@modelcontextprotocol/sdk/dist/server/index.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/dist/server/stdio.js";
+import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
 	CallToolRequestSchema,
 	ListToolsRequestSchema,
-} from "@modelcontextprotocol/sdk/dist/types.js";
+} from "@modelcontextprotocol/sdk/types.js";
+import { zodToJsonSchema } from "zod-to-json-schema";
 import { env } from "./env.js";
 import { eventWatcher } from "./services/event-watcher.js";
 import { listWatchingTool } from "./tools/list-watching-tool.js";
@@ -38,7 +39,7 @@ class NearMCPServer {
 				tools: Array.from(this.tools.values()).map((tool) => ({
 					name: tool.name,
 					description: tool.description,
-					inputSchema: tool.parameters,
+					inputSchema: zodToJsonSchema(tool.parameters),
 				})),
 			};
 		});

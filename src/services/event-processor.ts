@@ -1,5 +1,5 @@
 import { EventEmitter } from "node:events";
-import type { Server } from "@modelcontextprotocol/sdk/dist/server/index.js";
+import type { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import dedent from "dedent";
 import type { Account } from "near-api-js";
 import { env } from "../env.js";

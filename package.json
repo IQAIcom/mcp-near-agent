@@ -7,7 +7,9 @@
 	"bin": {
 		"mcp-near-agent": "dist/index.js"
 	},
-	"files": ["dist"],
+	"files": [
+		"dist"
+	],
 	"scripts": {
 		"build": "tsc && shx chmod +x dist/index.js",
 		"prepare": "husky",
@@ -19,7 +21,11 @@
 		"lint": "biome check ./src"
 	},
 	"packageManager": "pnpm@10.7.1",
-	"keywords": ["mcp", "Near", "iqagents"],
+	"keywords": [
+		"mcp",
+		"Near",
+		"iqagents"
+	],
 	"author": "IQAI",
 	"repository": {
 		"type": "git",
@@ -45,13 +51,14 @@
 		"node-cron": "^4.1.0",
 		"ts-node": "^10.9.2",
 		"viem": "^2.30.6",
-		"zod": "^3.25.50"
+		"zod": "^3.25.50",
+		"zod-to-json-schema": "^3.24.6"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "*",
 		"@changesets/cli": "^2.29.4",
-		"@types/node-cron": "^3.0.11",
 		"@types/node": "^24.0.4",
+		"@types/node-cron": "^3.0.11",
 		"husky": "^9.1.7",
 		"lint-staged": "^16.1.0",
 		"shx": "^0.3.4",
