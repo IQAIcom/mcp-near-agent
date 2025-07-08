@@ -1,5 +1,11 @@
 # @iqai/mcp-near-agent
 
+## 0.0.10
+
+### Patch Changes
+
+- 4fe92b0: Updates bin command
+
 ## 0.0.9
 
 ### Patch Changes
