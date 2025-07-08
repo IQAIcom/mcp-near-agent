@@ -1,5 +1,11 @@
 # @iqai/mcp-near-agent
 
+## 0.0.12
+
+### Patch Changes
+
+- b0922c0: Adds shebang to make the npx script work
+
 ## 0.0.11
 
 ### Patch Changes
