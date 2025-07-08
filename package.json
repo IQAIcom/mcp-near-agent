@@ -2,7 +2,7 @@
 	"name": "@iqai/mcp-near",
 	"version": "0.0.7",
 	"description": "Mcp server for Near",
-	"main": "src/index.ts",
+	"main": "dist/index.js",
 	"type": "module",
 	"bin": {
 		"mcp-near": "dist/index.js"
