@@ -1,7 +1,6 @@
 import { EventEmitter } from "node:events";
 import type { Server } from "@modelcontextprotocol/sdk/dist/server/index.js";
-import type { MCPSession } from "../tools/watch-event-tool.js";
-import type { AgentEvent } from "../types.js";
+import type { AgentEvent, MCPSession } from "../types.js";
 import { AuthManager } from "./auth-manager.js";
 import { EventListener } from "./event-listener.js";
 import { EventProcessor } from "./event-processor.js";

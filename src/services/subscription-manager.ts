@@ -1,5 +1,5 @@
 import type * as cron from "node-cron";
-import type { MCPSession } from "../tools/watch-event-tool.js";
+import type { MCPSession } from "../types.js";
 
 export interface EventSubscription {
 	id: string; // `${contractId}:${eventName}`

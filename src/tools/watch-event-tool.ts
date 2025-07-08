@@ -2,24 +2,7 @@ import dedent from "dedent";
 import z from "zod";
 import { AuthManager } from "../services/auth-manager.js";
 import { eventWatcher } from "../services/event-watcher.js";
-
-// Define a generic MCP session type (opaque, but must have requestSampling for event-processor)
-export type MCPSession = {
-	id?: string;
-	requestSampling?: (...args: any[]) => Promise<any>;
-	[key: string]: any;
-};
-
-// Define a local Tool type compatible with the MCP server
-export interface Tool<P = any, S extends z.ZodTypeAny = z.ZodTypeAny> {
-	name: string;
-	description: string;
-	parameters: S;
-	execute: (
-		params: z.infer<S>,
-		context: { session?: MCPSession },
-	) => Promise<string>;
-}
+import { MCPSession, Tool } from "../types.js";
 
 const watchEventSchema = z.object({
 	eventName: z.string().describe("Name of the NEAR event to watch for"),

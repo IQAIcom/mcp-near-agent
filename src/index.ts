@@ -10,6 +10,7 @@ import { eventWatcher } from "./services/event-watcher.js";
 import { listWatchingTool } from "./tools/list-watching-tool.js";
 import { stopWatchingTool } from "./tools/stop-watching-tool.js";
 import { watchEventTool } from "./tools/watch-event-tool.js";
+import { Tool } from "./types.js";
 
 if (env.DEBUG) {
 	import("mcps-logger/console");
@@ -17,7 +18,7 @@ if (env.DEBUG) {
 
 class NearMCPServer {
 	private server: Server;
-	private tools = new Map<string, any>();
+	private tools = new Map<string, Tool<any, any>>();
 
 	constructor() {
 		this.server = new Server({

@@ -1,7 +1,7 @@
 import dedent from "dedent";
 import z from "zod";
 import { eventWatcher } from "../services/event-watcher.js";
-import type { Tool } from "./watch-event-tool.js";
+import { Tool } from "../types.js";
 
 const listWatchingSchema = z.object({
 	includeStats: z.boolean().optional().describe("Include detailed statistics"),
