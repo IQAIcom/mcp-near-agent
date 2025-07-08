@@ -3,7 +3,7 @@ import z from "zod";
 import { AuthManager } from "../services/auth-manager.js";
 import { eventWatcher } from "../services/event-watcher.js";
 
-// Define a generic MCP session type (opaque, but must have requestSampling for event-processor)
+// Define a generic MCP session type (opaque)
 export type MCPSession = {
 	id?: string;
 	requestSampling?: (...args: any[]) => Promise<any>;
