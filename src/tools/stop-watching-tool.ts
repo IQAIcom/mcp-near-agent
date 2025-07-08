@@ -1,7 +1,7 @@
 import dedent from "dedent";
-import type { FastMCPSession, Tool } from "fastmcp";
 import z from "zod";
 import { eventWatcher } from "../services/event-watcher.js";
+import type { Tool } from "./watch-event-tool.js";
 
 const stopWatchingSchema = z.object({
 	contractId: z.string().describe("NEAR contract ID to stop monitoring"),

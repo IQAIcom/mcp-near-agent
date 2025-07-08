@@ -7,9 +7,7 @@
 	"bin": {
 		"mcp-near-agent": "dist/index.js"
 	},
-	"files": [
-		"dist"
-	],
+	"files": ["dist"],
 	"scripts": {
 		"build": "tsc && shx chmod +x dist/index.js",
 		"prepare": "husky",
@@ -21,11 +19,7 @@
 		"lint": "biome check ./src"
 	},
 	"packageManager": "pnpm@10.7.1",
-	"keywords": [
-		"mcp",
-		"Near",
-		"iqagents"
-	],
+	"keywords": ["mcp", "Near", "iqagents"],
 	"author": "IQAI",
 	"repository": {
 		"type": "git",
@@ -40,10 +34,10 @@
 		"access": "public"
 	},
 	"dependencies": {
+		"@modelcontextprotocol/sdk": "^0.4.0",
 		"@near-js/client": "^2.0.2",
 		"dedent": "^1.6.0",
 		"dotenv": "^17.0.1",
-		"fastmcp": "^3.8.2",
 		"gql.tada": "^1.8.10",
 		"graphql-request": "^7.1.2",
 		"mcps-logger": "^1.0.0",

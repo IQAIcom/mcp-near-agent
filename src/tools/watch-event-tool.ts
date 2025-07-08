@@ -1,8 +1,25 @@
 import dedent from "dedent";
-import type { FastMCPSession, Tool } from "fastmcp";
 import z from "zod";
 import { AuthManager } from "../services/auth-manager.js";
 import { eventWatcher } from "../services/event-watcher.js";
+
+// Define a generic MCP session type (opaque, but must have requestSampling for event-processor)
+export type MCPSession = {
+	id?: string;
+	requestSampling?: (...args: any[]) => Promise<any>;
+	[key: string]: any;
+};
+
+// Define a local Tool type compatible with the MCP server
+export interface Tool<P = any, S extends z.ZodTypeAny = z.ZodTypeAny> {
+	name: string;
+	description: string;
+	parameters: S;
+	execute: (
+		params: z.infer<S>,
+		context: { session?: MCPSession },
+	) => Promise<string>;
+}
 
 const watchEventSchema = z.object({
 	eventName: z.string().describe("Name of the NEAR event to watch for"),
@@ -49,7 +66,7 @@ export const watchEventTool: Tool<
 				eventName,
 				responseMethodName,
 				cronExpression,
-				session: session as unknown as FastMCPSession,
+				session: session as MCPSession,
 			});
 
 			// Set up event listeners for this session

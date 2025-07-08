@@ -1,5 +1,5 @@
-import type { FastMCPSession } from "fastmcp";
 import type * as cron from "node-cron";
+import type { MCPSession } from "../tools/watch-event-tool.js";
 
 export interface EventSubscription {
 	id: string; // `${contractId}:${eventName}`
@@ -7,7 +7,7 @@ export interface EventSubscription {
 	eventName: string;
 	responseMethodName: string;
 	cronExpression: string;
-	session: FastMCPSession;
+	session: MCPSession;
 	cronJob?: cron.ScheduledTask;
 	isActive: boolean;
 	createdAt: number;
@@ -19,7 +19,7 @@ export interface SubscriptionConfig {
 	eventName: string;
 	responseMethodName: string;
 	cronExpression: string;
-	session: FastMCPSession;
+	session: MCPSession;
 }
 
 export class SubscriptionManager {

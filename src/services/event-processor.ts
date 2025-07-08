@@ -1,4 +1,5 @@
 import { EventEmitter } from "node:events";
+import type { Server } from "@modelcontextprotocol/sdk/dist/server/index.js";
 import dedent from "dedent";
 import type { Account } from "near-api-js";
 import { env } from "../env.js";
@@ -49,6 +50,7 @@ export class EventProcessor extends EventEmitter<EventProcessorEvents> {
 		"You are a helpful NEAR blockchain assistant. Process the following event data and provide a concise response.";
 
 	private account: Account | null = null;
+	private server: Server | null = null;
 	private processingQueue = new Map<string, EventContext>();
 	private processingStats = {
 		totalProcessed: 0,
@@ -57,9 +59,10 @@ export class EventProcessor extends EventEmitter<EventProcessorEvents> {
 		averageProcessingTime: 0,
 	};
 
-	constructor(account?: Account) {
+	constructor(account?: Account, server?: Server) {
 		super();
 		this.account = account || null;
+		this.server = server || null;
 	}
 
 	/**
@@ -67,6 +70,13 @@ export class EventProcessor extends EventEmitter<EventProcessorEvents> {
 	 */
 	public setAccount(account: Account): void {
 		this.account = account;
+	}
+
+	/**
+	 * Set the MCP server for creating messages
+	 */
+	public setServer(server: Server): void {
+		this.server = server;
 	}
 
 	/**
@@ -148,12 +158,16 @@ export class EventProcessor extends EventEmitter<EventProcessorEvents> {
 	}
 
 	/**
-	 * Request sampling from MCP client
+	 * Request sampling from MCP client using server.createMessage
 	 */
 	private async requestMCPSampling(
 		event: AgentEvent,
 		subscription: EventSubscription,
 	): Promise<any> {
+		if (!this.server) {
+			throw new Error("MCP server not set. Call setServer() first.");
+		}
+
 		try {
 			const eventContent = this.formatEventForSampling(event);
 
@@ -182,8 +196,7 @@ export class EventProcessor extends EventEmitter<EventProcessorEvents> {
 				);
 			});
 
-			const samplingPromise =
-				subscription.session.requestSampling(samplingRequest);
+			const samplingPromise = this.server.createMessage(samplingRequest);
 
 			const response = await Promise.race([samplingPromise, timeoutPromise]);
 
@@ -392,6 +405,7 @@ export class EventProcessor extends EventEmitter<EventProcessorEvents> {
 		this.processingQueue.clear();
 		this.removeAllListeners();
 		this.account = null;
+		this.server = null;
 		console.log("✅ EventProcessor cleaned up");
 	}
 
