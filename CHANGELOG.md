@@ -1,5 +1,11 @@
 # @iqai/mcp-near-agent
 
+## 0.0.9
+
+### Patch Changes
+
+- 87e5f48: Updates package name to mcp near agent
+
 ## 0.0.8
 
 ### Patch Changes
