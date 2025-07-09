@@ -46,8 +46,6 @@ export interface ProcessingStats {
 export class EventProcessor extends EventEmitter<EventProcessorEvents> {
 	private static readonly DEFAULT_MAX_TOKENS = 1000;
 	private static readonly DEFAULT_TIMEOUT = 2 * 60 * 1000; // 2 minutes
-	private static readonly DEFAULT_SYSTEM_PROMPT =
-		"You are a helpful NEAR blockchain assistant. Process the following event data and provide a concise response.";
 
 	private account: Account | null = null;
 	private server: Server | null = null;
@@ -183,7 +181,6 @@ export class EventProcessor extends EventEmitter<EventProcessorEvents> {
 						},
 					},
 				],
-				systemPrompt: this.generateSystemPrompt(event, subscription),
 				includeContext: "thisServer" as const,
 				maxTokens: EventProcessor.DEFAULT_MAX_TOKENS,
 			};
@@ -235,26 +232,6 @@ export class EventProcessor extends EventEmitter<EventProcessorEvents> {
 			${JSON.stringify(eventInfo.payload, null, 2)}
 
 			Please analyze this event and provide a concise response that can be sent back to the blockchain contract.`;
-	}
-
-	/**
-	 * Generate system prompt based on event and subscription
-	 */
-	private generateSystemPrompt(
-		event: AgentEvent,
-		subscription: EventSubscription,
-	): string {
-		return dedent`
-			${EventProcessor.DEFAULT_SYSTEM_PROMPT}
-
-			You are processing a '${event.eventType}' event from contract '${subscription.contractId}'.
-			The response will be sent to the blockchain method '${subscription.responseMethodName}'.
-
-			Guidelines:
-			- Provide a clear, concise response
-			- Focus on the key information from the event
-			- Ensure the response is appropriate for blockchain storage
-			- Keep responses under 500 characters when possible`;
 	}
 
 	/**
