@@ -31,8 +31,7 @@ export const listWatchingTool: Tool<
 
 					🚀 To start watching events, use the watch_near_event tool with:
 					• contractId: The NEAR contract to monitor
-					• eventName: The specific event to watch for
-					• responseMethodName: The contract method to call with responses`;
+					• eventName: The specific event to watch for`;
 			}
 
 			let output = dedent`

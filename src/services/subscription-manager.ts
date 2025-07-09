@@ -6,6 +6,7 @@ export interface EventSubscription {
 	contractId: string;
 	eventName: string;
 	responseMethodName: string;
+	responseParameterName: string;
 	cronExpression: string;
 	server: Server;
 	cronJob?: cron.ScheduledTask;
@@ -18,6 +19,7 @@ export interface SubscriptionConfig {
 	contractId: string;
 	eventName: string;
 	responseMethodName: string;
+	responseParameterName: string;
 	cronExpression: string;
 	server: Server;
 }
@@ -27,6 +29,7 @@ export class SubscriptionManager {
 	private subscriptions = new Map<string, EventSubscription>();
 	private readonly DEFAULT_CRON_EXPRESSION = "*/10 * * * * *";
 	private readonly DEFAULT_RESPONSE_METHOD = "agent_response";
+	private readonly DEFAULT_RESPONSE_PARAMETER_NAME = "response";
 
 	private constructor() {}
 
@@ -61,6 +64,8 @@ export class SubscriptionManager {
 			eventName: config.eventName,
 			responseMethodName:
 				config.responseMethodName || this.DEFAULT_RESPONSE_METHOD,
+			responseParameterName:
+				config.responseParameterName || this.DEFAULT_RESPONSE_PARAMETER_NAME,
 			cronExpression: config.cronExpression || this.DEFAULT_CRON_EXPRESSION,
 			server: config.server,
 			isActive: true,

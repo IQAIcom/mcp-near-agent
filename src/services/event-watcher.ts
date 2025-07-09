@@ -20,6 +20,7 @@ export interface WatchEventRequest {
 	contractId: string;
 	eventName: string;
 	responseMethodName: string;
+	responseParameterName: string;
 	cronExpression?: string;
 	server: Server;
 }
@@ -149,6 +150,7 @@ export class EventWatcher extends EventEmitter<EventWatcherEvents> {
 			contractId,
 			eventName,
 			responseMethodName,
+			responseParameterName,
 			cronExpression,
 			server,
 		} = request;
@@ -170,6 +172,7 @@ export class EventWatcher extends EventEmitter<EventWatcherEvents> {
 				contractId,
 				eventName,
 				responseMethodName,
+				responseParameterName,
 				cronExpression: cronExpression || "*/10 * * * * *",
 				server,
 			};
@@ -289,6 +292,7 @@ export class EventWatcher extends EventEmitter<EventWatcherEvents> {
 				contractId: sub.contractId,
 				eventName: sub.eventName,
 				responseMethodName: sub.responseMethodName,
+				responseParameterName: sub.responseParameterName,
 				cronExpression: sub.cronExpression,
 				isActive: sub.isActive,
 				createdAt: sub.createdAt,
