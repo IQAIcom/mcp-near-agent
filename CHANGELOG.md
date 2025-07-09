@@ -1,5 +1,11 @@
 # @iqai/mcp-near-agent
 
+## 0.1.2
+
+### Patch Changes
+
+- 6196b22: Adds agent response parameter customization
+
 ## 0.1.1
 
 ### Patch Changes
