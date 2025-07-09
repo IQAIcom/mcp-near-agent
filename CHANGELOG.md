@@ -1,5 +1,11 @@
 # @iqai/mcp-near-agent
 
+## 0.1.0
+
+### Minor Changes
+
+- 8742fa0: Replace fastmcp server to official MCP sdk
+
 ## 0.0.12
 
 ### Patch Changes
