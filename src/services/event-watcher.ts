@@ -93,7 +93,7 @@ export class EventWatcher extends EventEmitter<EventWatcherEvents> {
 	 */
 	public setServer(server: Server): void {
 		this.server = server;
-		this.eventProcessor.setServer(server);
+		this.eventProcessor.setServer(this.server);
 	}
 
 	/**
