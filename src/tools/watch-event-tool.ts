@@ -9,10 +9,19 @@ const watchEventSchema = z.object({
 	contractId: z.string().describe("NEAR contract ID to monitor"),
 	responseMethodName: z
 		.string()
-		.describe("Contract method to call with the response"),
+		.default("agent_response")
+		.describe(
+			"Contract method to call with the response (defaults to agent_response)",
+		),
+	responseParameterName: z
+		.string()
+		.default("response")
+		.describe(
+			"Name of the parameter to pass to the response method (defaults to response)",
+		),
 	cronExpression: z
 		.string()
-		.optional()
+		.default("*/10 * * * * *")
 		.describe(
 			"Cron expression for polling frequency (default: every 10 seconds)",
 		),
@@ -31,8 +40,13 @@ export const watchEventTool: Tool<
 	parameters: watchEventSchema,
 	execute: async (params, { server }) => {
 		try {
-			const { eventName, contractId, responseMethodName, cronExpression } =
-				params;
+			const {
+				eventName,
+				contractId,
+				responseMethodName,
+				responseParameterName,
+				cronExpression,
+			} = params;
 
 			console.log(
 				`🎯 Starting to watch for '${eventName}' events on contract '${contractId}'}`,
@@ -48,6 +62,7 @@ export const watchEventTool: Tool<
 				contractId,
 				eventName,
 				responseMethodName,
+				responseParameterName,
 				cronExpression,
 				server,
 			});
@@ -65,6 +80,7 @@ export const watchEventTool: Tool<
 			• Contract: ${contractId}
 			• Event: ${eventName}
 			• Response Method: ${responseMethodName}
+			• Response Parameter Name: ${responseParameterName}
 			• Polling: ${cronExpression || "*/10 * * * * *"}
 			• Subscription ID: ${subscriptionId}
 			• Status: 🟢 Active

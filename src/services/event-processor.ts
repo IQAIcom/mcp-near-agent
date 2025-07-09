@@ -256,7 +256,7 @@ export class EventProcessor extends EventEmitter<EventProcessorEvents> {
 				methodName: subscription.responseMethodName,
 				args: {
 					data_id: requestId,
-					response: response,
+					[subscription.responseParameterName]: response,
 					timestamp: Date.now(),
 				},
 				gas: BigInt(env.NEAR_GAS_LIMIT || "300000000000000"),
