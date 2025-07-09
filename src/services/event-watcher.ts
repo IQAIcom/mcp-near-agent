@@ -1,6 +1,6 @@
 import { EventEmitter } from "node:events";
 import type { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import type { AgentEvent, MCPSession } from "../types.js";
+import type { AgentEvent } from "../types.js";
 import { AuthManager } from "./auth-manager.js";
 import { EventListener } from "./event-listener.js";
 import { EventProcessor } from "./event-processor.js";
@@ -21,7 +21,7 @@ export interface WatchEventRequest {
 	eventName: string;
 	responseMethodName: string;
 	cronExpression?: string;
-	session: MCPSession;
+	server: Server;
 }
 
 // Type-safe event definitions
@@ -150,7 +150,7 @@ export class EventWatcher extends EventEmitter<EventWatcherEvents> {
 			eventName,
 			responseMethodName,
 			cronExpression,
-			session,
+			server,
 		} = request;
 
 		// Check if already watching this event
@@ -171,7 +171,7 @@ export class EventWatcher extends EventEmitter<EventWatcherEvents> {
 				eventName,
 				responseMethodName,
 				cronExpression: cronExpression || "*/10 * * * * *",
-				session,
+				server,
 			};
 
 			const subscription = subscriptionManager.subscribe(subscriptionConfig);

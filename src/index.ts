@@ -6,6 +6,7 @@ import {
 	ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 import { zodToJsonSchema } from "zod-to-json-schema";
+import { ZodError, z } from "zod/v4";
 import { env } from "./env.js";
 import { eventWatcher } from "./services/event-watcher.js";
 import { listWatchingTool } from "./tools/list-watching-tool.js";
@@ -20,7 +21,6 @@ if (env.DEBUG) {
 class NearMCPServer {
 	private server: Server;
 	private tools = new Map<string, Tool<any, any>>();
-
 	constructor() {
 		this.server = new Server({
 			name: "Near Agent MCP Server",
@@ -54,8 +54,9 @@ class NearMCPServer {
 				}
 
 				try {
-					const result = await tool.execute(request.params.arguments, {
-						session: request.session,
+					const args = tool.parameters.parse(request.params.arguments);
+					const result = await tool.execute(args, {
+						server: this.server,
 					});
 
 					return {
@@ -68,7 +69,7 @@ class NearMCPServer {
 					};
 				} catch (error) {
 					throw new Error(
-						`Tool execution failed: ${error instanceof Error ? error.message : String(error)}`,
+						`Tool execution failed: ${error instanceof ZodError ? z.prettifyError(error) : String(error)}`,
 					);
 				}
 			},
