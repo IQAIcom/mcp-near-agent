@@ -1,4 +1,4 @@
-import type { FastMCPSession } from "fastmcp";
+import { Server } from "@modelcontextprotocol/sdk/dist/server/index.js";
 import type * as cron from "node-cron";
 
 export interface EventSubscription {
@@ -7,7 +7,7 @@ export interface EventSubscription {
 	eventName: string;
 	responseMethodName: string;
 	cronExpression: string;
-	session: FastMCPSession;
+	server: Server;
 	cronJob?: cron.ScheduledTask;
 	isActive: boolean;
 	createdAt: number;
@@ -19,7 +19,7 @@ export interface SubscriptionConfig {
 	eventName: string;
 	responseMethodName: string;
 	cronExpression: string;
-	session: FastMCPSession;
+	server: Server;
 }
 
 export class SubscriptionManager {
@@ -62,7 +62,7 @@ export class SubscriptionManager {
 			responseMethodName:
 				config.responseMethodName || this.DEFAULT_RESPONSE_METHOD,
 			cronExpression: config.cronExpression || this.DEFAULT_CRON_EXPRESSION,
-			session: config.session,
+			server: config.server,
 			isActive: true,
 			createdAt: Date.now(),
 		};

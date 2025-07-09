@@ -40,10 +40,10 @@
 		"access": "public"
 	},
 	"dependencies": {
+		"@modelcontextprotocol/sdk": "^0.4.0",
 		"@near-js/client": "^2.0.2",
 		"dedent": "^1.6.0",
 		"dotenv": "^17.0.1",
-		"fastmcp": "^3.8.2",
 		"gql.tada": "^1.8.10",
 		"graphql-request": "^7.1.2",
 		"mcps-logger": "^1.0.0",
@@ -51,13 +51,14 @@
 		"node-cron": "^4.1.0",
 		"ts-node": "^10.9.2",
 		"viem": "^2.30.6",
-		"zod": "^3.25.50"
+		"zod": "^3.25.50",
+		"zod-to-json-schema": "^3.24.6"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "*",
 		"@changesets/cli": "^2.29.4",
-		"@types/node-cron": "^3.0.11",
 		"@types/node": "^24.0.4",
+		"@types/node-cron": "^3.0.11",
 		"husky": "^9.1.7",
 		"lint-staged": "^16.1.0",
 		"shx": "^0.3.4",

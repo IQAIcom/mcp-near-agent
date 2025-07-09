@@ -1,5 +1,5 @@
 import { EventEmitter } from "node:events";
-import type { FastMCPSession } from "fastmcp";
+import type { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import type { AgentEvent } from "../types.js";
 import { AuthManager } from "./auth-manager.js";
 import { EventListener } from "./event-listener.js";
@@ -21,7 +21,7 @@ export interface WatchEventRequest {
 	eventName: string;
 	responseMethodName: string;
 	cronExpression?: string;
-	session: FastMCPSession;
+	server: Server;
 }
 
 // Type-safe event definitions
@@ -54,9 +54,11 @@ export interface EventWatcherStats {
 }
 
 export class EventWatcher extends EventEmitter<EventWatcherEvents> {
+	private static instance: EventWatcher;
 	private authManager: AuthManager;
 	private eventListener: EventListener;
 	private eventProcessor: EventProcessor;
+	private server: Server | null = null;
 	private isInitialized = false;
 	private startTime = Date.now();
 
@@ -69,19 +71,29 @@ export class EventWatcher extends EventEmitter<EventWatcherEvents> {
 		totalProcessingTime: 0,
 	};
 
-	constructor(config: EventWatcherConfig = {}) {
+	private constructor() {
 		super();
 
 		this.authManager = AuthManager.getInstance();
-		this.eventListener = new EventListener({
-			networkId: config.networkId,
-			nodeUrl: config.nodeUrl,
-			gasLimit: config.gasLimit,
-		});
-
+		this.eventListener = new EventListener();
 		this.eventProcessor = new EventProcessor();
 
 		this.setupEventHandlers();
+	}
+
+	public static getInstance(): EventWatcher {
+		if (!EventWatcher.instance) {
+			EventWatcher.instance = new EventWatcher();
+		}
+		return EventWatcher.instance;
+	}
+
+	/**
+	 * Set the MCP server instance for message creation
+	 */
+	public setServer(server: Server): void {
+		this.server = server;
+		this.eventProcessor.setServer(this.server);
 	}
 
 	/**
@@ -138,7 +150,7 @@ export class EventWatcher extends EventEmitter<EventWatcherEvents> {
 			eventName,
 			responseMethodName,
 			cronExpression,
-			session,
+			server,
 		} = request;
 
 		// Check if already watching this event
@@ -159,7 +171,7 @@ export class EventWatcher extends EventEmitter<EventWatcherEvents> {
 				eventName,
 				responseMethodName,
 				cronExpression: cronExpression || "*/10 * * * * *",
-				session,
+				server,
 			};
 
 			const subscription = subscriptionManager.subscribe(subscriptionConfig);
@@ -529,4 +541,4 @@ export class EventWatcher extends EventEmitter<EventWatcherEvents> {
 }
 
 // Export singleton instance
-export const eventWatcher = new EventWatcher();
+export const eventWatcher = EventWatcher.getInstance();

@@ -1,8 +1,8 @@
 import dedent from "dedent";
-import type { FastMCPSession, Tool } from "fastmcp";
 import z from "zod";
 import { AuthManager } from "../services/auth-manager.js";
 import { eventWatcher } from "../services/event-watcher.js";
+import { Tool } from "../types.js";
 
 const watchEventSchema = z.object({
 	eventName: z.string().describe("Name of the NEAR event to watch for"),
@@ -29,13 +29,13 @@ export const watchEventTool: Tool<
 	description:
 		"Start watching for specific events on a NEAR contract and process them with AI responses",
 	parameters: watchEventSchema,
-	execute: async (params, { session }) => {
+	execute: async (params, { server }) => {
 		try {
 			const { eventName, contractId, responseMethodName, cronExpression } =
 				params;
 
 			console.log(
-				`🎯 Starting to watch for '${eventName}' events on contract '${contractId}' with session ID: ${session ? (session.id ?? "N/A") : "N/A"}`,
+				`🎯 Starting to watch for '${eventName}' events on contract '${contractId}'}`,
 			);
 
 			// Check if already watching this event
@@ -49,7 +49,7 @@ export const watchEventTool: Tool<
 				eventName,
 				responseMethodName,
 				cronExpression,
-				session: session as unknown as FastMCPSession,
+				server,
 			});
 
 			// Set up event listeners for this session
