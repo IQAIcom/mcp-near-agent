@@ -1,11 +1,11 @@
-# 🌊 NEAR Agent MCP Server
+# 🌊 NEAR MCP Server
 
-[![npm version](https://img.shields.io/npm/v/@iqai/mcp-near-agent.svg)](https://www.npmjs.com/package/@iqai/mcp-near-agent)
+[![npm version](https://img.shields.io/npm/v/@iqai/mcp-near.svg)](https://www.npmjs.com/package/@iqai/mcp-near)
 [![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](https://opensource.org/licenses/ISC)
 
 ## 📖 Overview
 
-The NEAR Agent MCP Server enables AI agents to interact with the [NEAR Protocol](https://near.org) blockchain. This server provides smart contract interaction, transaction handling, and event listening capabilities with AI-driven processing.
+The NEAR MCP Server enables AI agents to interact with the [NEAR Protocol](https://near.org) blockchain. This server provides smart contract interaction, transaction handling, and event listening capabilities with AI-driven processing.
 
 By implementing the Model Context Protocol (MCP), this server allows Large Language Models (LLMs) to monitor blockchain events, process them with AI intelligence, and respond back to smart contracts, bridging the gap between AI and decentralized applications.
 
@@ -23,14 +23,14 @@ By implementing the Model Context Protocol (MCP), this server allows Large Langu
 To use this server without installing it globally:
 
 ```bash
-npx @iqai/mcp-near-agent
+npx @iqai/mcp-near
 ```
 
 ### 🔧 Build from Source
 
 ```bash
-git clone https://github.com/IQAIcom/mcp-near-agent.git
-cd mcp-near-agent
+git clone https://github.com/IQAIcom/mcp-near.git
+cd mcp-near
 pnpm install
 pnpm run build
 ```
@@ -44,9 +44,9 @@ Add the following configuration to your MCP client settings (e.g., `claude_deskt
 ```json
 {
   "mcpServers": {
-    "near-agent": {
+    "near": {
       "command": "npx",
-      "args": ["-y", "@iqai/mcp-near-agent"],
+      "args": ["-y", "@iqai/mcp-near"],
       "env": {
         "ACCOUNT_ID": "your-account.near",
         "ACCOUNT_KEY": "ed25519:your_private_key_here"
@@ -61,9 +61,9 @@ Add the following configuration to your MCP client settings (e.g., `claude_deskt
 ```json
 {
   "mcpServers": {
-    "near-agent": {
+    "near": {
       "command": "node",
-      "args": ["/absolute/path/to/mcp-near-agent/dist/index.js"],
+      "args": ["/absolute/path/to/mcp-near/dist/index.js"],
       "env": {
         "ACCOUNT_ID": "your-account.near",
         "ACCOUNT_KEY": "ed25519:your_private_key_here",

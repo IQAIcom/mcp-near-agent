@@ -1,11 +1,11 @@
 {
-	"name": "@iqai/mcp-near-agent",
+	"name": "@iqai/mcp-near",
 	"version": "0.1.2",
 	"description": "Mcp server for Near",
 	"main": "dist/index.js",
 	"type": "module",
 	"bin": {
-		"mcp-near-agent": "dist/index.js"
+		"mcp-near": "dist/index.js"
 	},
 	"files": [
 		"dist"
@@ -29,12 +29,12 @@
 	"author": "IQAI",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/IQAIcom/mcp-near-agent.git"
+		"url": "git+https://github.com/IQAIcom/mcp-near.git"
 	},
 	"license": "ISC",
-	"homepage": "https://github.com/IQAIcom/mcp-near-agent#readme",
+	"homepage": "https://github.com/IQAIcom/mcp-near#readme",
 	"bugs": {
-		"url": "https://github.com/IQAIcom/mcp-near-agent/issues"
+		"url": "https://github.com/IQAIcom/mcp-near/issues"
 	},
 	"publishConfig": {
 		"access": "public"
