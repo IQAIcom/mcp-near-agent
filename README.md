@@ -105,6 +105,32 @@ Add the following configuration to your MCP client settings (e.g., `claude_deskt
 
 <!-- AUTO-GENERATED TOOLS START -->
 
+### `list_watched_near_events`
+List all currently watched NEAR events and their status
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `includeStats` | boolean |  | Include detailed statistics |
+
+### `stop_watching_near_event`
+Stop watching for specific events on a NEAR contract
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `contractId` | string | ✅ | NEAR contract ID to stop monitoring |
+| `eventName` | string | ✅ | Name of the event to stop watching |
+
+### `watch_near_event`
+Start watching for specific events on a NEAR contract and process them with AI responses
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `eventName` | string | ✅ |  | Name of the NEAR event to watch for |
+| `contractId` | string | ✅ |  | NEAR contract ID to monitor |
+| `responseMethodName` | string |  | "agent_response" | Contract method to call with the response (defaults to agent_response) |
+| `responseParameterName` | string |  | "response" | Name of the parameter to pass to the response method (defaults to response) |
+| `cronExpression` | string |  | "*/10 * * * * *" | Cron expression for polling frequency (default: every 10 seconds) |
+
 <!-- AUTO-GENERATED TOOLS END -->
 
 ## 👨‍💻 Development
