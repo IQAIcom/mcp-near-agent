@@ -29,7 +29,7 @@ npx @iqai/mcp-near
 ### 🔧 Build from Source
 
 ```bash
-git clone https://github.com/IQAIcom/mcp-near.git
+git clone https://github.com/IQOfficial/mcp-near.git
 cd mcp-near
 pnpm install
 pnpm run build

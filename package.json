@@ -29,12 +29,12 @@
 	"author": "IQAI",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/IQAIcom/mcp-near.git"
+		"url": "git+https://github.com/IQOfficial/mcp-near.git"
 	},
 	"license": "ISC",
-	"homepage": "https://github.com/IQAIcom/mcp-near#readme",
+	"homepage": "https://github.com/IQOfficial/mcp-near#readme",
 	"bugs": {
-		"url": "https://github.com/IQAIcom/mcp-near/issues"
+		"url": "https://github.com/IQOfficial/mcp-near/issues"
 	},
 	"publishConfig": {
 		"access": "public"
